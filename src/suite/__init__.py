@@ -1,0 +1,25 @@
+from dm_control.composer import Environment
+
+from src.suite.tasks import base
+from src.suite.tasks.pick_and_lift import PickAndLift
+from src.suite import common
+
+
+def load(random_state: int,
+         *,
+         action_mode: base.ActionMode = 'discrete',
+         control_timestep: float = common.CONTROL_TIMESTEP,
+         time_limit: float = float('inf'),
+         ) -> Environment:
+    task = PickAndLift(
+        action_mode=action_mode,
+        control_timestep=control_timestep
+    )
+    return Environment(
+        task,
+        random_state=random_state,
+        time_limit=time_limit,
+        raise_exception_on_physics_error=True,
+        strip_singleton_obs_buffer_dim=True,
+    )
+

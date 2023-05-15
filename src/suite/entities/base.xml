@@ -1,0 +1,28 @@
+<mujoco model="base">
+    <compiler coordinate="local" angle="radian" autolimits="true"
+        eulerseq="xyz" boundmass="1e-5" boundinertia="1e-11"/>
+
+    <statistic center="0 0 0"/>
+
+    <option cone="elliptic" noslip_iterations="5" noslip_tolerance="0"
+            iterations="100" timestep="0.002"
+            impratio="10" tolerance="1e-10">
+<!--        <flag energy="enable" contact="enable"/>-->
+    </option>
+
+    <worldbody>
+        <body name="mocap" mocap="true" pos="0 0 0">
+            <geom conaffinity="0" contype="0" pos="0 0 0"
+                  size=".03" type="sphere"/>
+            <site pos="0 0 0" size=".03" type="sphere"/>
+        </body>
+    </worldbody>
+
+    <visual>
+        <map znear="0.01"/>
+        <headlight diffuse=".6 .6 .6" ambient=".3 .3 .3"
+                   specular="0 0 0" active="1"/>
+        <scale forcewidth="0.1" contactwidth="0.3" contactheight="0.1"
+        jointwidth=".1" framewidth=".1" framelength="1."/>
+    </visual>
+</mujoco>
