@@ -4,6 +4,8 @@ from dm_control import mjcf
 from dm_control import composer
 from dm_control.composer.observation import observable
 
+from src.suite import common
+
 
 _ROBOTIQ2F85_XML_PATH = os.path.join(
     os.path.dirname(__file__),
@@ -22,6 +24,7 @@ class Robotiq2f85(composer.Entity):
             'site',
             name='tcp_center_point',
             pos=[0, 0, .1493],
+            group=common.MOCAP_SITE_GROUP
         )
 
     def _build_observables(self):

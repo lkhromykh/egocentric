@@ -9,11 +9,13 @@ def load(random_state: int,
          *,
          action_mode: base.ActionMode = 'discrete',
          control_timestep: float = common.CONTROL_TIMESTEP,
+         img_size: tuple[int, int] = (84, 84),
          time_limit: float = float('inf'),
          ) -> Environment:
     task = PickAndLift(
         action_mode=action_mode,
-        control_timestep=control_timestep
+        control_timestep=control_timestep,
+        img_size=img_size
     )
     return Environment(
         task,

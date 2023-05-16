@@ -68,17 +68,20 @@ class Arena(Entity):
             castshadow='false'
         )
 
-    def add_free_entity(self, entity):
+    def add_free_entity(self, entity, offset=None):
         frame = self.attach(entity)
         frame.add('freejoint')
+        if offset is not None:
+            frame.pos = offset
         return frame
 
-    def attach_to_mocap(self, body):
+    def attach_to_mocap(self, body, relpose=None):
         return self._mjcf_root.equality.add(
             'weld',
             name='mocap_weld',
             body1=self._mocap,
             body2=body,
+            relpose=relpose,
             solref='0.02 1'
         )
 

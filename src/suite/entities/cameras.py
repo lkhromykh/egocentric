@@ -4,7 +4,7 @@ import collections
 from dm_control import mjcf
 from dm_control.composer.observation import observable
 
-
+# TODO: remove mutable variables
 class CameraSpec(TypedDict, total=False):
     name: str
     pos: tuple[float, float, float]

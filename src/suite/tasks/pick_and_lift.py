@@ -2,6 +2,7 @@ import numpy as np
 from dm_control.composer import initializers
 from dm_control.composer.observation import observable
 from dm_control.composer.variation import distributions
+from dm_control.utils import rewards
 
 from src.suite import entities
 from src.suite import common
@@ -20,8 +21,9 @@ class PickAndLift(base.Task):
         super().__init__(*args, **kwargs)
         self._prop = Box(
             half_lengths=common.BOX_SIZE,
-            mass=common.BOX_MASS
+            mass=common.BOX_MASS,
         )
+        self._prop.geom.rgba = (1., 0, 0, 1.)
         self._arena.add_free_entity(self._prop)
 
         def distance(physics):
@@ -44,8 +46,16 @@ class PickAndLift(base.Task):
 
     def initialize_episode(self, physics, random_state):
         super().initialize_episode(physics, random_state)
-        self._physics_variation.apply_variations(physics, random_state)
+        self._prop_placer(physics, random_state)
 
     def get_reward(self, physics):
-        return 1.
+        lowest = physics.bind(self._prop.vertices).xpos[:, 2].min()
+        return rewards.tolerance(
+            lowest,
+            bounds=(.1, .3),
+            margin=.1,
+            value_at_margin=0.,
+            sigmoid='linear'
+        )
+
 

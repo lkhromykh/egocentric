@@ -1,3 +1,4 @@
+import abc
 from typing import NamedTuple, Literal
 from enum import IntEnum
 
@@ -6,9 +7,7 @@ from dm_env import specs
 
 from dm_control.composer.task import Task as _Task
 from dm_control.manipulation.shared import workspaces
-from dm_control.composer import initializers
 from dm_control.composer import variation
-from dm_control.composer.observation import observable
 
 from src.suite import common
 from src.suite import entities
@@ -49,26 +48,27 @@ class BoundingBox(NamedTuple):
 
 
 class WorkSpace(NamedTuple):
+
     prop_box: BoundingBox
     tcp_box: BoundingBox
 
     @classmethod
     def from_halfsizes(cls,
                        half_sizes: tuple[float, float] = (.15, .15),
-                       height_split: tuple[float, float, float] = (0., .2, .4)
+                       tcp_height: tuple[float, float] = (.162, .4)
                        ) -> 'WorkSpace':
         x, y = half_sizes
-        low, mid, high = height_split
+        low, high = tcp_height
 
         def box_fn(l, h):
             return BoundingBox(
                 lower=np.float32([-x, -y, l]),
                 upper=np.float32([x, y, h])
             )
-        return cls(box_fn(low, mid), box_fn(mid, high))
+        return cls(box_fn(0.05, 0.05), box_fn(low, high))
 
 
-class Task(_Task):
+class Task(abc.ABC, _Task):
 
     def __init__(self,
                  control_timestep: float = common.CONTROL_TIMESTEP,
@@ -88,10 +88,13 @@ class Task(_Task):
             entities.EGOCENTRIC_REALSENSE,
             height=h, width=w
         )
-        self._arena.add_free_entity(self._gripper)
+        offset = self.workspace.tcp_box.center
+        self._arena.mocap.pos = offset
+        self._arena.add_free_entity(self._gripper, offset)
         self._weld = self._arena.attach_to_mocap(self._gripper.base_mount)
 
-        self._physics_variation = variation.PhysicsVariator()
+        # self._physics_variation = variation.PhysicsVariator() task randomization
+        # self._mjcf_variation = variation.MJCFVariator()  domain randomization
         rb = self.root_entity.mjcf_model.worldbody
         workspaces.add_bbox_site(
             body=rb,
@@ -112,7 +115,6 @@ class Task(_Task):
         pos = self.workspace.tcp_box.center
         quat = common.DOWN_QUATERNION
         self._set_mocap(physics, pos, quat)
-        physics.step()
 
     def before_step(self, physics, action, random_state):
         if self.action_mod == 'discrete':

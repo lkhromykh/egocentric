@@ -243,7 +243,7 @@ class _VertexSitesMixin:
             (-half_length, half_length)
             for half_length in box_geom_or_site.size
         )
-        site_positions = np.vstack(itertools.product(*offsets))
+        site_positions = np.vstack(tuple(itertools.product(*offsets)))
         if box_geom_or_site.pos is not None:
             site_positions += box_geom_or_site.pos
         self._vertices = []
