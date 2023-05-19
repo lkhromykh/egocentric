@@ -50,14 +50,20 @@ def vpi(cfg: Config, nets: Networks) -> StepFn:
         target_q_t = nets.critic(target_params, obs_tTm1, a_t)
         target_q_dash_t = jax.vmap(nets.critic, in_axes=(None, None, 0)
                                    )(target_params, obs_t, pi_a_dash_t)
+        target_q_t, target_q_dash_t = map(
+            lambda x: x.min(-1),  # pessimistic critics ensembling
+            (target_q_t, target_q_dash_t)
+        )
         v_tp1 = target_q_dash_t.mean(0)[1:]
 
         in_axes = 5 * (1,) + (None,)
-        adv_fn = jax.vmap(retrace, in_axes, out_axes=1)
+        resids_fn = jax.vmap(retrace, in_axes, out_axes=1)
         log_rho_t = log_pi_t - log_mu_t
         disc_t *= cfg.gamma
-        adv_t = adv_fn(target_q_t, v_tp1, r_t, disc_t, log_rho_t, cfg.lambda_)
-        critic_loss = jnp.square(q_t - sg(target_q_t + adv_t)).mean()
+        resid_t = resids_fn(target_q_t, v_tp1, r_t, disc_t,
+                            log_rho_t, cfg.lambda_)
+        target_q_t = jnp.expand_dims(target_q_t + resid_t, -1)
+        critic_loss = jnp.square(q_t - sg(target_q_t)).mean()
 
         entropy = policy_t.entropy()
         match cfg.action_space:
@@ -73,7 +79,7 @@ def vpi(cfg: Config, nets: Networks) -> StepFn:
         metrics = {
             'critic_loss': critic_loss,
             'actor_loss': actor_loss,
-            'advantage': adv_t.mean(),
+            'qvalue_residue': resid_t.mean(),
             'entropy': entropy.mean(),
             'log_importance': log_rho_t.mean(),
             'reward': r_t.mean(),

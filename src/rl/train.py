@@ -36,7 +36,8 @@ def main(cfg: Config):
     start = time.time()
     ts = env.reset()
     interactions = 0
-    grad_steps = cfg.utd * cfg.sequence_len * cfg.num_envs // cfg.batch_size
+    grad_steps = cfg.spi * cfg.sequence_len * cfg.num_envs // cfg.batch_size
+    grad_steps = max(grad_steps, 1)
     while True:
         trajectories, ts = train_loop(env, policy, cfg.sequence_len, ts)
         for i in range(cfg.num_envs):

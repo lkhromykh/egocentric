@@ -146,7 +146,27 @@ class Critic(hk.Module):
         x = jnp.concatenate([state, action.astype(state.dtype)], -1)
         x = MLP(self.layers, self.act, self.norm)(x)
         fc = hk.Linear(1)
-        return jnp.squeeze(fc(x), -1)
+        return fc(x)
+
+
+class CriticsEnsemble(hk.Module):
+
+    def __init__(self,
+                 ensemble_size: int,
+                 *args,
+                 name: str | None = None,
+                 **kwargs
+                 ) -> None:
+        super().__init__(name)
+        self.ensemble_size = ensemble_size
+        self._factory = lambda n: Critic(*args, name=n, **kwargs)
+
+    def __call__(self, *args, **kwargs):
+        values = []
+        for i in range(self.ensemble_size):
+            critic = self._factory('critic_%d' % i)
+            values.append(critic(*args, **kwargs))
+        return jnp.concatenate(values, -1)
 
 
 class Networks(NamedTuple):
@@ -196,7 +216,8 @@ class Networks(NamedTuple):
 
             def critic(obs, action):
                 state = encoder(cfg.critic_keys, 'critic_encoder')(obs)
-                critic_ = Critic(
+                critic_ = CriticsEnsemble(
+                    cfg.ensemble_size,
                     cfg.critic_layers,
                     cfg.activation,
                     cfg.normalization,

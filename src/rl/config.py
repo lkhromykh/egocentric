@@ -23,13 +23,14 @@ class Config(_Config):
     actor_layers: Layers = (256, 256)
     critic_keys: str = r'.*'
     critic_layers: Layers = (256, 256)
+    ensemble_size: int = 1
 
     # Train
     jit: bool = True
     buffer_capacity: int = 10 ** 4
-    batch_size: int = 16
-    sequence_len: int = 50
-    utd: int = 1
+    batch_size: int = 24
+    sequence_len: int = 24
+    spi: int = 1
     learning_rate: float = 3e-4
     polyak_tau: float = 5e-3
     weight_decay: float = 1e-6
@@ -37,10 +38,10 @@ class Config(_Config):
     eval_every: int = 20000
     train_after: int = 5000
 
-    logdir: str = 'logdir/cheetah2'
-    task: str = 'dmc_cheetah_run'
-    action_space: str = 'continuous'
-    num_envs: int = 10
+    logdir: str = 'logdir/src'
+    task: str = 'src'
+    action_space: str = 'discrete'
+    num_envs: int = 12
     seed: int = 0
 
 
@@ -54,6 +55,10 @@ _DEBUG_CONFIG = Config(
     critic_layers=(9, 11),
     buffer_capacity=100,
     batch_size=19,
-    sequence_len=500,
+    sequence_len=15,
+    eval_every=1,
+    train_after=1,
+    spi=1,
+    num_envs=1,
     jit=False
 )
