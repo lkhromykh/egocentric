@@ -52,9 +52,6 @@ def vpi(cfg: Config, nets: Networks) -> StepFn:
                                    )(target_params, obs_t, pi_a_dash_t)
         v_tp1 = target_q_dash_t.mean(0)[1:]
 
-        # targets = r_t + cfg.gamma * disc_t * v_tp1
-        # critic_loss = jnp.square(q_t - sg(targets)).mean()
-
         in_axes = 5 * (1,) + (None,)
         adv_fn = jax.vmap(retrace, in_axes, out_axes=1)
         log_rho_t = log_pi_t - log_mu_t
@@ -62,18 +59,16 @@ def vpi(cfg: Config, nets: Networks) -> StepFn:
         adv_t = adv_fn(target_q_t, v_tp1, r_t, disc_t, log_rho_t, cfg.lambda_)
         critic_loss = jnp.square(q_t - sg(target_q_t + adv_t)).mean()
 
-        # Avoid maximizing terminal states.
-        entropy = policy_t[:-1].entropy()
-        target_q_dash_t, log_pi_dash_t = map(
-            lambda t: t[:, :-1],
-            (target_q_dash_t, log_pi_dash_t)
-        )
-        if cfg.action_space == 'continuous':
-            actor_loss = -target_q_dash_t.mean(0)
-            actor_loss -= cfg.entropy_coef * entropy
-        else:
-            actor_loss = cross_entropy(target_q_dash_t, log_pi_dash_t)
-        actor_loss = actor_loss.mean()
+        entropy = policy_t.entropy()
+        match cfg.action_space:
+            case 'continuous':
+                actor_loss = -target_q_dash_t.mean(0)
+                actor_loss -= cfg.entropy_coef * entropy
+            case 'discrete':
+                actor_loss = cross_entropy(target_q_dash_t, log_pi_dash_t)
+            case _:
+                raise ValueError(cfg.action_space)
+        actor_loss = jnp.mean(actor_loss)
 
         metrics = {
             'critic_loss': critic_loss,

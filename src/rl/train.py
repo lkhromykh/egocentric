@@ -1,3 +1,4 @@
+import time
 import pickle
 # import chex
 #chex.disable_asserts()
@@ -28,28 +29,31 @@ def main(cfg: Config):
     step = builder.make_step_fn(nets)
 
     logger = loggers.TFSummaryLogger(cfg.logdir, label='', step_key='step')
-    # logger = loggers.TerminalOutput()
 
     def policy(obs, train=True):
         return jax.jit(nets.act)(state.params, next(rngseq), obs, train)
 
+    start = time.time()
     ts = env.reset()
     interactions = 0
-    grad_steps = cfg.utd * cfg.sequence_len // cfg.batch_size
+    grad_steps = cfg.utd * cfg.sequence_len * cfg.num_envs // cfg.batch_size
     while True:
-        trajectory, ts = train_loop(env, policy, cfg.sequence_len, ts)
-        buffer.add(trajectory)
-        interactions += cfg.sequence_len
+        trajectories, ts = train_loop(env, policy, cfg.sequence_len, ts)
+        for i in range(cfg.num_envs):
+            trajectory = jax.tree_util.tree_map(lambda t: t[:, i], trajectories)
+            buffer.add(trajectory)
+        interactions += cfg.sequence_len * cfg.num_envs
         if interactions < cfg.train_after:
             continue
         for _ in range(grad_steps):
             batch = next(ds)
             state, metrics = step(state, batch)
-        metrics.update(step=interactions)
+        fps = interactions / (time.time() - start)
+        metrics.update(step=interactions, fps=fps)
 
         if (interactions % cfg.eval_every) < cfg.sequence_len:
             eval_reward = eval_loop(env, lambda obs: policy(obs, False))
-            metrics.update(eval_reward=eval_reward)
+            metrics.update(eval_mean=eval_reward.mean(), eval_std=eval_reward.std())
             ts = env.reset()
         logger.write(metrics)
 

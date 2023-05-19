@@ -21,5 +21,5 @@ def retrace(q_t: chex.Array,
         resid = r + disc * next_v - q
         acc = resid + disc * c * acc
         return acc, acc
-    _, adv = jax.lax.scan(fn, 0., xs, reverse=True)
-    return adv
+    _, resids = jax.lax.scan(fn, 0., xs, reverse=True)
+    return resids

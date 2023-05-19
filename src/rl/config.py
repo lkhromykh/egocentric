@@ -7,10 +7,9 @@ Layers = tuple[int, ...]
 
 @dataclasses.dataclass
 class Config(_Config):
-    gamma: float = .99
+    gamma: float = .98
     lambda_: float = 1.
-    entropy_coef: float = 1e-2
-    utd: int = 16
+    entropy_coef: float = 4e-3
     num_actions: int = 20
 
     # Architecture
@@ -30,16 +29,18 @@ class Config(_Config):
     buffer_capacity: int = 10 ** 4
     batch_size: int = 16
     sequence_len: int = 50
+    utd: int = 1
     learning_rate: float = 3e-4
     polyak_tau: float = 5e-3
     weight_decay: float = 1e-6
     max_grad: float = 50.
-    eval_every: int = 10000
-    train_after: int = 10000
+    eval_every: int = 20000
+    train_after: int = 5000
 
-    logdir: str = 'logdir/test'
-    task: str = 'ur_pick'
+    logdir: str = 'logdir/cheetah2'
+    task: str = 'dmc_cheetah_run'
     action_space: str = 'continuous'
+    num_envs: int = 10
     seed: int = 0
 
 

@@ -1,4 +1,3 @@
-import numpy as np
 from dm_control.composer import initializers
 from dm_control.composer.observation import observable
 from dm_control.composer.variation import distributions
@@ -27,13 +26,14 @@ class PickAndLift(base.Task):
         self._arena.add_free_entity(self._prop)
 
         def distance(physics):
-            pos, _ = self._get_mocap(physics)
+            tcp_pos = physics.bind(self._gripper.tool_center_point).xpos
             obj_pos, _ = self._prop.get_pose(physics)
-            return obj_pos - pos
+            return obj_pos - tcp_pos
 
-        self._task_observables['distance'] = observable.Generic(distance)
-        for obs in self._task_observables.values():
-            obs.enabled = True
+        self._task_observables['box/distance'] = observable.Generic(distance)
+        self._task_observables['box/distance'].enabled = True
+        # for obs in self._task_observables.values():
+        #     obs.enabled = True
         self._gripper.observables.enable_all()
         self._prop.observables.enable_all()
 

@@ -34,7 +34,7 @@ class TrainingState(NamedTuple):
             params=params,
             target_params=target_params,
             opt_state=opt_state,
-            step=step+1
+            step=step + 1
         )
 
     @classmethod

@@ -2,11 +2,10 @@ import os
 
 import dm_env.specs
 import numpy as np
-from dm_control import suite
 import jax
 import optax
 import haiku as hk
-from rltools.dmc_wrappers import AutoReset
+from rltools.dmc_wrappers import AutoReset, AsyncEnv, SequentialEnv
 
 from src.rl.replay_buffer import ReplayBuffer
 from src.rl.networks import Networks
@@ -29,10 +28,32 @@ class Builder:
             cfg.save(path)
 
     def make_env(self, rng: int) -> dm_env.Environment:
-        env = suite.load('walker', 'walk',
-                         task_kwargs={'random': rng},
-                         environment_kwargs={'flat_observation': True})
-        return AutoReset(env)
+        c = self.cfg
+        rng = np.random.default_rng(rng)
+        match c.task.split('_'):
+            case 'dmc', domain, task:
+                from dm_control import suite
+
+                def env_fn(seed):
+                    return lambda: AutoReset(suite.load(
+                        domain, task,
+                        task_kwargs={'random': seed},
+                        environment_kwargs={'flat_observation': True}
+                    ))
+            case ['src']:
+                from src.suite import load
+
+                def env_fn(seed):
+                    return lambda: AutoReset(load(
+                        seed,
+                        action_mode=c.action_space,
+                        img_size=(84, 84),
+                        time_limit=5,
+                    ))
+            case _:
+                raise ValueError(self.cfg.task)
+        seeds = rng.integers(0, np.iinfo(np.int32).max, c.num_envs)
+        return SequentialEnv([env_fn(seed) for seed in seeds])
 
     def make_networks(self, env: dm_env.Environment) -> Networks:
         return Networks.make_networks(

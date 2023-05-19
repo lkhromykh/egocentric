@@ -212,7 +212,7 @@ class Networks(NamedTuple):
                 action, log_prob = jax.lax.cond(
                     training,
                     lambda: dist.experimental_sample_and_log_prob(seed=seed),
-                    lambda: (dist.mode(), jnp.array(0., dtype=dist.dtype))
+                    lambda: (dist.mode(), jnp.zeros(dist.batch_shape))
                 )
                 return action, log_prob
 
@@ -234,8 +234,6 @@ class Networks(NamedTuple):
 def _get_act(act: str) -> Callable[[Array], Array]:
     if act == 'none':
         return lambda x: x
-    if hasattr(jax.lax, act):
-        return getattr(jax.lax, act)
     if hasattr(jax.nn, act):
         return getattr(jax.nn, act)
     raise ValueError(act)
