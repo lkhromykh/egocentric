@@ -5,7 +5,6 @@ import re
 from dm_env import specs
 import jax
 import jax.numpy as jnp
-import chex
 import haiku as hk
 import tensorflow_probability.substrates.jax.distributions as tfd
 
@@ -61,16 +60,14 @@ class Encoder(hk.Module):
         self.norm = norm
         
     def __call__(self, obs: types.Observation) -> Array:
-        chex.assert_rank(jax.tree_util.tree_leaves(obs), {1, 3})
         mlp_feat, cnn_feat, emb = [], [], []
         def concat(x): return jnp.concatenate(x, -1)
 
-        for key, feat in obs.items():
+        for key, feat in sorted(obs.items()):
             if re.search(self.obs_keys, key):
-                match feat.ndim:
-                    case 1: mlp_feat.append(feat)
-                    case 3: cnn_feat.append(feat)
-                    case _: raise NotImplementedError(feat.shape)
+                match feat.dtype:
+                    case jnp.uint8: cnn_feat.append(feat)
+                    case _: mlp_feat.append(jnp.atleast_1d(feat))
         if mlp_feat:
             mlp_feat = concat(mlp_feat)
             emb.append(self._mlp(mlp_feat))
@@ -80,18 +77,19 @@ class Encoder(hk.Module):
         return concat(emb)
 
     def _mlp(self, x):
-        chex.assert_type(x, float)
         return MLP(self.mlp_layers, self.act, self.norm)(x)
 
     def _cnn(self, x):
-        chex.assert_type(x, jnp.uint8)
         x /= 255
+        prefix = x.shape[:-3]
+        x = jnp.reshape(x, (jnp.prod(prefix),) + x.shape[-3:])
+
         cnn_arch = zip(self.cnn_depths, self.cnn_kernels, self.cnn_strides)
         for depth, kernel, stride in cnn_arch:
             x = hk.Conv2D(depth, kernel, stride, padding='VALID')(x)
             x = _get_norm(self.norm)(x)
             x = _get_act(self.act)(x)
-        return x.reshape(-1)
+        return jnp.reshape(x, prefix + (-1,))
 
 
 class Actor(hk.Module):
@@ -110,8 +108,6 @@ class Actor(hk.Module):
         self.norm = norm
 
     def __call__(self, state: Array) -> tfd.Distribution:
-        chex.assert_rank(state, 1)
-        chex.assert_type(state, float)
         state = MLP(self.layers, self.act, self.norm)(state)
 
         match sp := self.action_spec:
@@ -147,30 +143,10 @@ class Critic(hk.Module):
                  state: Array,
                  action: Array,
                  ) -> Array:
-        x = jnp.concatenate([state, action.astype(state.dtype)])
+        x = jnp.concatenate([state, action.astype(state.dtype)], -1)
         x = MLP(self.layers, self.act, self.norm)(x)
         fc = hk.Linear(1)
-        return fc(x)
-
-
-class CriticsEnsemble(hk.Module):
-
-    def __init__(self,
-                 ensemble_size: int,
-                 *args,
-                 name: str | None = None,
-                 **kwargs
-                 ) -> None:
-        super().__init__(name)
-        self.ensemble_size = ensemble_size
-        self._factory = lambda n: Critic(*args, name=n, **kwargs)
-
-    def __call__(self, *args, **kwargs):
-        values = []
-        for i in range(self.ensemble_size):
-            critic = self._factory('critic_%d' % i)
-            values.append(critic(*args, **kwargs))
-        return jnp.concatenate(values, -1)
+        return jnp.squeeze(fc(x), -1)
 
 
 class Networks(NamedTuple):
@@ -220,8 +196,7 @@ class Networks(NamedTuple):
 
             def critic(obs, action):
                 state = encoder(cfg.critic_keys, 'critic_encoder')(obs)
-                critic_ = CriticsEnsemble(
-                    cfg.ensemble_size,
+                critic_ = Critic(
                     cfg.critic_layers,
                     cfg.activation,
                     cfg.normalization,
@@ -237,7 +212,7 @@ class Networks(NamedTuple):
                 action, log_prob = jax.lax.cond(
                     training,
                     lambda: dist.experimental_sample_and_log_prob(seed=seed),
-                    lambda: (dist.mode(), jnp.zeros((), dtype=dist.dtype))
+                    lambda: (dist.mode(), jnp.array(0., dtype=dist.dtype))
                 )
                 return action, log_prob
 

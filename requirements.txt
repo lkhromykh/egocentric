@@ -1,0 +1,8 @@
+chex
+dm_control
+dm-haiku
+jax  # See github for CUDA compatible installation.
+jaxlib
+optax
+rltools[all] @ git+https://github.com/lkhromykh/rltools.git@dev
+tensorflow_probability[jax]

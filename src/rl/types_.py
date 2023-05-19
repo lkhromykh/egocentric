@@ -24,4 +24,4 @@ class Trajectory(TypedDict, total=False):
     actions: list[Action]
     rewards: list[float]
     discounts: list[float]
-    next_observations: list[Observation]
+    log_probs: list[float]

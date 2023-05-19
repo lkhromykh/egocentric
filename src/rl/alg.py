@@ -20,16 +20,12 @@ StepFn = Callable[
 
 def vpi(cfg: Config, nets: Networks) -> StepFn:
     sg = jax.lax.stop_gradient
+    def tree_slice(t, sl): return jax.tree_util.tree_map(lambda x: x[sl], t)
 
-    def shift(x):
-        x = sg(x)
-        return jnp.concatenate([x[1:], jnp.zeros_like(x[-1:])])
-
-    def cross_entropy_loss(policy, q_values, actions):
-        chex.assert_rank([q_values, actions], [1, 2])
-        q_values, actions = jax.lax.stop_gradient((q_values, actions))
-        normalized_weights = jax.nn.softmax(q_values / cfg.entropy_coef)
-        return -jnp.sum(normalized_weights * policy.log_prob(actions))
+    def cross_entropy(q_values, log_probs):
+        tempered_q_values = sg(q_values) / cfg.entropy_coef
+        normalized_weights = jax.nn.softmax(tempered_q_values, axis=0)
+        return -jnp.sum(normalized_weights * log_probs, axis=0)
 
     def loss_fn(
             params: hk.Params,
@@ -42,32 +38,49 @@ def vpi(cfg: Config, nets: Networks) -> StepFn:
             log_mu_t: types.Array,
     ) -> tuple[chex.Numeric, types.Metrics]:
         # time major arrays are expected [TIME, BATCH, ...].
-        chex.assert_rank([a_t, r_t, disc_t, log_mu_t], [3, 2, 2, 2])
-        actor_fn = hk.BatchApply(jax.vmap(nets.actor, in_axes=(None, 0)))
-        critic_fn = hk.BatchApply(jax.vmap(nets.critic, in_axes=(None, 0, 0)))
-        import pdb; pdb.set_trace()
+        chex.assert_tree_shape_prefix(obs_t, (cfg.sequence_len + 1, cfg.batch_size))
+        chex.assert_tree_shape_prefix(a_t, (cfg.sequence_len, cfg.batch_size))
 
-        policy_t = actor_fn(params, obs_t)
-        log_pi_t = policy_t.log_prob(a_t)
-        pi_a_t = policy_t.sample(seed=rng, size=(cfg.num_actions,))
+        policy_t = nets.actor(params, obs_t)
+        log_pi_t = policy_t[:-1].log_prob(a_t)
+        pi_a_dash_t, log_pi_dash_t = policy_t.experimental_sample_and_log_prob(
+            seed=rng, sample_shape=(cfg.num_actions,))
+        obs_tTm1 = tree_slice(obs_t, jnp.s_[:-1])
+        q_t = nets.critic(params, obs_tTm1, a_t)
+        target_q_t = nets.critic(target_params, obs_tTm1, a_t)
+        target_q_dash_t = jax.vmap(nets.critic, in_axes=(None, None, 0)
+                                   )(target_params, obs_t, pi_a_dash_t)
+        v_tp1 = target_q_dash_t.mean(0)[1:]
 
-        q_t = critic_fn(params, obs_t, a_t)
-        target_q_t = jax.vmap(critic_fn, in_axes=(None, None, 0)
-                              )(target_params, obs_t, pi_a_t)
-        v_tp1 = shift(target_q_t.mean(0))
+        # targets = r_t + cfg.gamma * disc_t * v_tp1
+        # critic_loss = jnp.square(q_t - sg(targets)).mean()
 
+        in_axes = 5 * (1,) + (None,)
+        adv_fn = jax.vmap(retrace, in_axes, out_axes=1)
         log_rho_t = log_pi_t - log_mu_t
-        adv_t = retrace(q_t, v_tp1, r_t, disc_t, log_rho_t, cfg.lambda_)
-        critic_loss = jnp.square(q_t - target_q_t - adv_t).mean()
-        actor_loss = cross_entropy_loss(policy_t, target_q_t, pi_a_t).mean()
-        # consider straight through for continuous action spaces
+        disc_t *= cfg.gamma
+        adv_t = adv_fn(target_q_t, v_tp1, r_t, disc_t, log_rho_t, cfg.lambda_)
+        critic_loss = jnp.square(q_t - sg(target_q_t + adv_t)).mean()
+
+        # Avoid maximizing terminal states.
+        entropy = policy_t[:-1].entropy()
+        target_q_dash_t, log_pi_dash_t = map(
+            lambda t: t[:, :-1],
+            (target_q_dash_t, log_pi_dash_t)
+        )
+        if cfg.action_space == 'continuous':
+            actor_loss = -target_q_dash_t.mean(0)
+            actor_loss -= cfg.entropy_coef * entropy
+        else:
+            actor_loss = cross_entropy(target_q_dash_t, log_pi_dash_t)
+        actor_loss = actor_loss.mean()
 
         metrics = {
             'critic_loss': critic_loss,
             'actor_loss': actor_loss,
             'advantage': adv_t.mean(),
-            'entropy': policy_t.entropy().mean(),
-            'log_importance_factor': log_rho_t.mean(),
+            'entropy': entropy.mean(),
+            'log_importance': log_rho_t.mean(),
             'reward': r_t.mean(),
             'value': target_q_t.mean()
         }
@@ -85,8 +98,8 @@ def vpi(cfg: Config, nets: Networks) -> StepFn:
             batch.get,
             ('observations', 'actions', 'rewards', 'discounts', 'log_probs')
         )
-        grad_fn = jax.grad(loss_fn)
-        grads, metrics = loss_fn(params, target_params, subkey, *args)
+        grad_fn = jax.grad(loss_fn, has_aux=True)
+        grads, metrics = grad_fn(params, target_params, subkey, *args)
         metrics.update(grad_norm=optax.global_norm(grads))
         state = state.update(grads)
         return state.replace(rng=rng), metrics

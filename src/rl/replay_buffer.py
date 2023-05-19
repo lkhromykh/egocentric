@@ -35,16 +35,11 @@ class ReplayBuffer:
         self._len = max(self._len, self._idx)
         self._idx %= self.capacity
 
-    def as_generator(self,
-                     batch_size: int,
-                     sequence_len: int
-                     ) -> Generator[Nested, None, None]:
+    def as_generator(self, batch_size: int) -> Generator[Nested, None, None]:
         while True:
             idx = self._rng.integers(0, self._len, batch_size)
             batch = tree_slice(self._memory, idx)
-            traj_len = len(batch[0])
-            start = self._rng.integers(0, traj_len - sequence_len, batch_size)
-            batch = tree_slice(batch, slice(start, start + sequence_len))
+            batch = tree_util.tree_map(lambda x: np.swapaxes(x, 0, 1), batch)
             yield self._treedef.unflatten(batch)
 
     def __len__(self) -> int:

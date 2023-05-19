@@ -22,4 +22,4 @@ def retrace(q_t: chex.Array,
         acc = resid + disc * c * acc
         return acc, acc
     _, adv = jax.lax.scan(fn, 0., xs, reverse=True)
-    return jax.lax.stop_gradient(adv)
+    return adv

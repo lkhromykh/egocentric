@@ -6,13 +6,13 @@ from dm_control import suite
 import jax
 import optax
 import haiku as hk
+from rltools.dmc_wrappers import AutoReset
 
 from src.rl.replay_buffer import ReplayBuffer
 from src.rl.networks import Networks
 from src.rl.config import Config
 from src.rl.training_state import TrainingState
 from src.rl.alg import vpi, StepFn
-from src.rl.ops import environment_loop
 from src.rl import types_ as types
 
 
@@ -29,7 +29,10 @@ class Builder:
             cfg.save(path)
 
     def make_env(self, rng: int) -> dm_env.Environment:
-        return suite.load('cartpole', 'balance', task_kwargs={'random': rng})
+        env = suite.load('walker', 'walk',
+                         task_kwargs={'random': rng},
+                         environment_kwargs={'flat_observation': True})
+        return AutoReset(env)
 
     def make_networks(self, env: dm_env.Environment) -> Networks:
         return Networks.make_networks(
@@ -43,37 +46,34 @@ class Builder:
                             params: hk.Params,
                             ) -> TrainingState:
         c = self.cfg
-        optim = optax.adam(c.learning_rate)
+        optim = optax.adamw(c.learning_rate, weight_decay=c.weight_decay)
+        optim = optax.chain(optax.clip_by_global_norm(c.max_grad), optim)
         return TrainingState.init(rng, params, optim, c.polyak_tau)
 
     def make_replay_buffer(self,
                            rng: int | np.random.Generator,
                            env: dm_env.Environment
                            ) -> ReplayBuffer:
-        # Replace this mess. Ensure length consistency.
+        seq_len = self.cfg.sequence_len
         act_spec = env.action_spec()
-        obs_spec = env.observation_spec()
-        test_traj = environment_loop(
-            env,
-            lambda _: (act_spec.generate_value(), 0)
-        )
-        traj_len = len(test_traj['actions'])
         if isinstance(act_spec, dm_env.specs.DiscreteArray):
             # Replace by one-hot signature.
             act_spec = np.zeros(act_spec.num_values, act_spec.dtype)
-
-        def time_major(x, times=traj_len):
-            return np.zeros((times,) + x.shape, dtype=x.dtype)
         signature = {
             'actions': act_spec,
             'rewards': env.reward_spec(),
             'discounts': env.discount_spec(),
-            'log_probs': np.zeros((), act_spec.dtype),
+            'log_probs': np.array(0., act_spec.dtype),
         }
-        tm = jax.tree_util.tree_map
-        signature = tm(time_major, signature)
-        signature['observations'] = tm(
-            lambda x: time_major(x, traj_len + 1), obs_spec)
+
+        def time_major(x, times=seq_len):
+            return np.zeros((times,) + x.shape, dtype=x.dtype)
+        tmap = jax.tree_util.tree_map
+        signature = tmap(time_major, signature)
+        signature['observations'] = tmap(
+            lambda x: time_major(x, seq_len + 1),
+            env.observation_spec()
+        )
         return ReplayBuffer(rng, self.cfg.buffer_capacity, signature)
 
     def make_step_fn(self, networks: Networks) -> StepFn:
