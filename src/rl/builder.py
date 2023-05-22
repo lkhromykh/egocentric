@@ -5,13 +5,14 @@ import numpy as np
 import jax
 import optax
 import haiku as hk
-from rltools.dmc_wrappers import AutoReset, AsyncEnv, SequentialEnv
+from rltools.dmc_wrappers import AutoReset, AsyncEnv
 
 from src.rl.replay_buffer import ReplayBuffer
 from src.rl.networks import Networks
 from src.rl.config import Config
 from src.rl.training_state import TrainingState
 from src.rl.alg import vpi, StepFn
+from src.rl.ops.environment import FromOneHot
 from src.rl import types_ as types
 
 
@@ -30,12 +31,14 @@ class Builder:
     def make_env(self, rng: int) -> dm_env.Environment:
         c = self.cfg
         rng = np.random.default_rng(rng)
+
+        def wrap(env): return AutoReset(FromOneHot(env))
         match c.task.split('_'):
             case 'dmc', domain, task:
                 from dm_control import suite
 
                 def env_fn(seed):
-                    return lambda: AutoReset(suite.load(
+                    return lambda: wrap(suite.load(
                         domain, task,
                         task_kwargs={'random': seed},
                         environment_kwargs={'flat_observation': True}
@@ -44,16 +47,17 @@ class Builder:
                 from src.suite import load
 
                 def env_fn(seed):
-                    return lambda: AutoReset(load(
+                    return lambda: wrap(load(
                         seed,
                         action_mode=c.action_space,
                         img_size=(84, 84),
-                        time_limit=5,
+                        control_timestep=.05,
+                        time_limit=2.5,
                     ))
             case _:
                 raise ValueError(self.cfg.task)
         seeds = rng.integers(0, np.iinfo(np.int32).max, c.num_envs)
-        return SequentialEnv([env_fn(seed) for seed in seeds])
+        return AsyncEnv([env_fn(seed) for seed in seeds], context='spawn')
 
     def make_networks(self, env: dm_env.Environment) -> Networks:
         return Networks.make_networks(

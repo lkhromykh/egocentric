@@ -10,13 +10,14 @@ def retrace(q_t: chex.Array,
             log_rho_t: chex.Array,
             lambda_: float
             ) -> chex.Array:
+    """1606.02647"""
     rho_t = lambda_ * jnp.minimum(1., jnp.exp(log_rho_t))
     xs = (q_t, v_tp1, r_t, disc_t, rho_t)
     chex.assert_rank(xs, 1)
     chex.assert_equal_shape(xs)
     chex.assert_scalar_non_negative(lambda_)
 
-    def fn(acc, x):  # 1606.02647
+    def fn(acc, x):
         q, next_v, r, disc, c = x
         resid = r + disc * next_v - q
         acc = resid + disc * c * acc

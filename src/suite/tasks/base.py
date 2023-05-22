@@ -55,7 +55,7 @@ class WorkSpace(NamedTuple):
     @classmethod
     def from_halfsizes(cls,
                        half_sizes: tuple[float, float] = (.1, .1),
-                       tcp_height: tuple[float, float] = (.162, .4)
+                       tcp_height: tuple[float, float] = (.1, .3)
                        ) -> 'WorkSpace':
         x, y = half_sizes
         low, high = tcp_height
@@ -79,7 +79,7 @@ class Task(abc.ABC, _Task):
         self._control_timestep = control_timestep
         self.action_mod = action_mode.lower()
         self.workspace = workspace
-        h, w = self.img_size = img_size
+        self.img_size = h, w = img_size
 
         self._arena = entities.Arena()
         self._gripper = entities.Robotiq2f85()
@@ -119,17 +119,20 @@ class Task(abc.ABC, _Task):
     def before_step(self, physics, action, random_state):
         if self.action_mod == 'discrete':
             action = DiscreteActions.as_array(action)
+        else:
+            action = np.clip(action, -1, 1)
         pos, grip = np.split(action, [3])
         mocap_pos, _ = self._get_mocap(physics)
         self._set_mocap(physics, mocap_pos + common.CTRL_LIMIT * pos)
         self._gripper.set_grasp(physics, float(grip > 0.))
 
     def action_spec(self, physics):
+        num_values = len(DiscreteActions)
         match self.action_mod:
             case 'discrete':
-                return specs.DiscreteArray(len(DiscreteActions))
+                return specs.DiscreteArray(num_values)
             case 'continuous':
-                lim = np.full((4,), 1, dtype=np.float32)
+                lim = np.full((num_values // 2,), 1, dtype=np.float32)
                 return specs.BoundedArray(
                     shape=lim.shape,
                     dtype=lim.dtype,

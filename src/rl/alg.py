@@ -87,7 +87,6 @@ def vpi(cfg: Config, nets: Networks) -> StepFn:
         }
         return actor_loss + critic_loss, metrics
 
-    @chex.assert_max_traces(1)
     def step(state: TrainingState,
              batch: types.Trajectory
              ) -> tuple[TrainingState, types.Metrics]:
@@ -105,4 +104,19 @@ def vpi(cfg: Config, nets: Networks) -> StepFn:
         state = state.update(grads)
         return state.replace(rng=rng), metrics
 
-    return step
+    @chex.assert_max_traces(1)
+    def fuse(state: TrainingState,
+             batch: types.Trajectory,
+             ) -> tuple[TrainingState, types.Metrics]:
+        batch_dim = 1
+        num_steps = jax.tree_util.tree_leaves(batch)[0].shape[batch_dim]
+        num_steps //= cfg.batch_size
+        for i in range(num_steps):
+            b = cfg.batch_size * i
+            e = b + cfg.batch_size
+            subbatch = tree_slice(batch, jnp.s_[:, b:e])
+            state, metrics = step(state, subbatch)
+        print('Tracing done')
+        return state, metrics
+
+    return fuse

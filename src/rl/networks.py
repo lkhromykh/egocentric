@@ -27,12 +27,12 @@ class MLP(hk.Module):
         self.layers = layers
         self.act = act
         self.norm = norm
-        self.activation_final = activate_final
+        self.activate_final = activate_final
 
     def __call__(self, x: Array) -> Array:
         for idx, layer in enumerate(self.layers):
             x = hk.Linear(layer)(x)
-            if idx != len(self.layers) - 1 or self.activation_final:
+            if idx != len(self.layers) - 1 or self.activate_final:
                 x = _get_norm(self.norm)(x)
                 x = _get_act(self.act)(x)
         return x
@@ -109,17 +109,23 @@ class Actor(hk.Module):
 
     def __call__(self, state: Array) -> tfd.Distribution:
         state = MLP(self.layers, self.act, self.norm)(state)
-
+        w_init = hk.initializers.TruncatedNormal(.01)
         match sp := self.action_spec:
             case specs.DiscreteArray():
-                logits = hk.Linear(sp.num_values)(state)
+                logits = hk.Linear(sp.num_values, w_init=w_init)(state)
                 dist = tfd.OneHotCategorical(logits)
             case specs.BoundedArray():
-                fc = hk.Linear(2 * sp.shape[0])
+                fc = hk.Linear(2 * sp.shape[0], w_init=w_init)
                 mean, std = jnp.split(fc(state), 2, -1)
                 mean = jnp.tanh(mean)
                 std = jax.nn.sigmoid(std) + 1e-3
                 dist = tfd.Normal(mean, std)
+                # TODO: Find out why truncated normal causing nans
+                # dist = tfd.TruncatedNormal(
+                #     mean, std,
+                #     low=sp.minimum.astype(mean.dtype),
+                #     high=sp.maximum.astype(mean.dtype),
+                # )
                 dist = tfd.Independent(dist, 1)
             case _:
                 raise ValueError(sp)
@@ -145,7 +151,7 @@ class Critic(hk.Module):
                  ) -> Array:
         x = jnp.concatenate([state, action.astype(state.dtype)], -1)
         x = MLP(self.layers, self.act, self.norm)(x)
-        fc = hk.Linear(1)
+        fc = hk.Linear(1, w_init=jnp.zeros)
         return fc(x)
 
 

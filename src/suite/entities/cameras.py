@@ -20,11 +20,12 @@ KINECT = CameraSpec(
     fovy=70
 )
 
+# https://www.intelrealsense.com/depth-camera-d455/
 EGOCENTRIC_REALSENSE = CameraSpec(
     name='realsense',
-    pos=(0., .0765, 0.),
+    pos=(0., .0765, 0.),  # relatively to the gripper
     quat=(0, 0, 1, 0),
-    fovy=65
+    fovy=87
 )
 
 
