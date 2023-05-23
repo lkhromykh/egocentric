@@ -26,6 +26,9 @@ class FromOneHot(Wrapper):
             act_spec = act_spec.replace(dtype=np.float32)
         self._act_spec = act_spec
 
+    def reset(self) -> dm_env.TimeStep:
+        return self.env.reset()
+
     def step(self, action: types.Action) -> dm_env.TimeStep:
         if self._is_discrete:
             action = action.argmax(-1)
