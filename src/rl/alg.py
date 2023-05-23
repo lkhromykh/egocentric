@@ -94,6 +94,7 @@ def vpi(cfg: Config, nets: Networks) -> StepFn:
         target_params = state.target_params
         rng, subkey = jax.random.split(state.rng)
 
+        batch = jax.tree_util.tree_map(lambda x: jnp.swapaxes(x, 0, 1), batch)
         args = map(
             batch.get,
             ('observations', 'actions', 'rewards', 'discounts', 'log_probs')
@@ -108,13 +109,13 @@ def vpi(cfg: Config, nets: Networks) -> StepFn:
     def fuse(state: TrainingState,
              batch: types.Trajectory,
              ) -> tuple[TrainingState, types.Metrics]:
-        batch_dim = 1
-        num_steps = jax.tree_util.tree_leaves(batch)[0].shape[batch_dim]
+        # not passing num steps for compliance with the step signature.
+        num_steps = len(jax.tree_util.tree_leaves(batch)[0])
         num_steps //= cfg.batch_size
         for i in range(num_steps):
             b = cfg.batch_size * i
             e = b + cfg.batch_size
-            subbatch = tree_slice(batch, jnp.s_[:, b:e])
+            subbatch = tree_slice(batch, jnp.s_[b:e])
             state, metrics = step(state, subbatch)
         print('Tracing done')
         return state, metrics

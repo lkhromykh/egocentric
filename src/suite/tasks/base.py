@@ -55,7 +55,7 @@ class WorkSpace(NamedTuple):
     @classmethod
     def from_halfsizes(cls,
                        half_sizes: tuple[float, float] = (.1, .1),
-                       tcp_height: tuple[float, float] = (.1, .3)
+                       tcp_height: tuple[float, float] = (.163, .4)
                        ) -> 'WorkSpace':
         x, y = half_sizes
         low, high = tcp_height
@@ -112,9 +112,13 @@ class Task(abc.ABC, _Task):
         )
 
     def initialize_episode(self, physics, random_state):
-        pos = self.workspace.tcp_box.center
+        #pos = self.workspace.tcp_box.center
+        pos = self.workspace.tcp_box.sample(random_state)
         quat = common.DOWN_QUATERNION
         self._set_mocap(physics, pos, quat)
+        base = physics.bind(self._gripper.base_mount)
+        while not np.allclose(base.xpos, pos, atol=1e-2):
+            physics.step()
 
     def before_step(self, physics, action, random_state):
         if self.action_mod == 'discrete':

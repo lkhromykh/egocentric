@@ -45,7 +45,7 @@ def train_loop(env: AutoReset,  # continue interacting after termination
     for _ in range(num_steps):
         obs = ts.observation
         action, log_prob = policy(obs)
-        ts = env.step(np.asarray(action))
+        ts = env.step(action)
         trajectory['observations'].append(obs)
         trajectory['actions'].append(action)
         trajectory['rewards'].append(ts.reward)
@@ -68,7 +68,7 @@ def eval_loop(env: dm_env.Environment, policy: ActionLogProbFn) -> np.float:
     reward = np.zeros(shape, dtype=env.reward_spec().dtype)
     while cont.any():
         action, _ = policy(ts.observation)
-        ts = env.step(np.asarray(action))
+        ts = env.step(action)
         reward += cont * ts.reward
         cont *= np.logical_not(ts.last())
     return reward

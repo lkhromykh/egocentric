@@ -39,7 +39,6 @@ class ReplayBuffer:
         while True:
             idx = self._rng.integers(0, self._len, batch_size)
             batch = tree_slice(self._memory, idx)
-            batch = tree_util.tree_map(lambda x: np.swapaxes(x, 0, 1), batch)
             yield self._treedef.unflatten(batch)
 
     def __len__(self) -> int:

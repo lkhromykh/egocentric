@@ -1,6 +1,7 @@
 from dm_control.composer import initializers
 from dm_control.composer.observation import observable
 from dm_control.composer.variation import distributions
+from dm_control.composer.environment import EpisodeInitializationError
 from dm_control.utils import rewards
 
 from src.suite import entities
@@ -31,9 +32,9 @@ class PickAndLift(base.Task):
             return obj_pos - tcp_pos
 
         self._task_observables['box/distance'] = observable.Generic(distance)
-        self._task_observables['box/distance'].enabled = True
-        # for obs in self._task_observables.values():
-        #     obs.enabled = True
+        # self._task_observables['box/distance'].enabled = True
+        for obs in self._task_observables.values():
+            obs.enabled = True
         self._gripper.observables.enable_all()
         self._prop.observables.enable_all()
 
@@ -45,8 +46,11 @@ class PickAndLift(base.Task):
         )
 
     def initialize_episode(self, physics, random_state):
-        super().initialize_episode(physics, random_state)
-        self._prop_placer(physics, random_state)
+        try:
+            super().initialize_episode(physics, random_state)
+            self._prop_placer(physics, random_state)
+        except Exception as exp:
+            raise EpisodeInitializationError(exp) from exp
 
     def get_reward(self, physics):
         lowest = physics.bind(self._prop.vertices).xpos[:, 2].min()
