@@ -3,6 +3,7 @@ from typing import NamedTuple
 import re
 
 from dm_env import specs
+import numpy as np
 import jax
 import jax.numpy as jnp
 import haiku as hk
@@ -82,7 +83,7 @@ class Encoder(hk.Module):
     def _cnn(self, x):
         x /= 255
         prefix = x.shape[:-3]
-        x = jnp.reshape(x, (jnp.prod(prefix),) + x.shape[-3:])
+        x = jnp.reshape(x, (np.prod(prefix),) + x.shape[-3:])
 
         cnn_arch = zip(self.cnn_depths, self.cnn_kernels, self.cnn_strides)
         for depth, kernel, stride in cnn_arch:
