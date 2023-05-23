@@ -20,9 +20,9 @@ class Config(_Config):
     cnn_kernels: Layers = (3, 3, 3, 3)
     cnn_strides: Layers = (2, 2, 2, 2)
     actor_keys: str = r'realsense'
-    actor_layers: Layers = (256, 256, 256)
+    actor_layers: Layers = (256, 256)
     critic_keys: str = r'robotiq|box'
-    critic_layers: Layers = (512, 256, 256)
+    critic_layers: Layers = (256, 256)
     ensemble_size: int = 1
 
     # Train
@@ -38,10 +38,10 @@ class Config(_Config):
     eval_every: int = 10_000
     train_after: int = 5000
 
-    logdir: str = 'logdir/src_assym'
+    logdir: str = 'logdir/src_asymm'
     task: str = 'src'
     action_space: str = 'discrete'
-    num_envs: int = 12
+    num_envs: int = 24
     seed: int = 0
 
 

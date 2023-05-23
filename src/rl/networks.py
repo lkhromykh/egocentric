@@ -110,7 +110,7 @@ class Actor(hk.Module):
 
     def __call__(self, state: Array) -> tfd.Distribution:
         state = MLP(self.layers, self.act, self.norm)(state)
-        w_init = hk.initializers.TruncatedNormal(.01)
+        w_init = hk.initializers.TruncatedNormal(1e-2)
         match sp := self.action_spec:
             case specs.DiscreteArray():
                 logits = hk.Linear(sp.num_values, w_init=w_init)(state)
