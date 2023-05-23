@@ -83,7 +83,7 @@ class Encoder(hk.Module):
     def _cnn(self, x):
         x /= 255
         prefix = x.shape[:-3]
-        x = jnp.reshape(x, (np.prod(prefix),) + x.shape[-3:])
+        x = jnp.reshape(x, (np.prod(prefix, dtype=int),) + x.shape[-3:])
 
         cnn_arch = zip(self.cnn_depths, self.cnn_kernels, self.cnn_strides)
         for depth, kernel, stride in cnn_arch:

@@ -1,7 +1,7 @@
 import os
 import time
 import pickle
-os.environ['XLA_PYTHON_PREALLOCATE'] = 'false'
+# os.environ['XLA_PYTHON_PREALLOCATE'] = 'false'
 
 
 import numpy as np
@@ -38,7 +38,8 @@ def main(cfg: Config):
     logger = loggers.TFSummaryLogger(cfg.logdir, label='', step_key='step')
 
     def policy(obs, train=True):
-        act_logprob = jax.jit(nets.act, backend='gpu')(state.params, next(rngseq), obs, train)
+        obs = jax.device_put(obs)
+        act_logprob = jax.jit(nets.act)(state.params, next(rngseq), obs, train)
         return tuple(map(np.asarray, act_logprob))
 
     start = time.time()
