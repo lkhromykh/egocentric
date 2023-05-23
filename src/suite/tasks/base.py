@@ -112,7 +112,6 @@ class Task(abc.ABC, _Task):
         )
 
     def initialize_episode(self, physics, random_state):
-        #pos = self.workspace.tcp_box.center
         pos = self.workspace.tcp_box.sample(random_state)
         quat = common.DOWN_QUATERNION
         self._set_mocap(physics, pos, quat)

@@ -110,7 +110,7 @@ class Actor(hk.Module):
 
     def __call__(self, state: Array) -> tfd.Distribution:
         state = MLP(self.layers, self.act, self.norm)(state)
-        w_init = hk.initializers.TruncatedNormal(1e-2)
+        w_init = hk.initializers.TruncatedNormal(1e-3)
         match sp := self.action_spec:
             case specs.DiscreteArray():
                 logits = hk.Linear(sp.num_values, w_init=w_init)(state)
@@ -152,7 +152,7 @@ class Critic(hk.Module):
                  ) -> Array:
         x = jnp.concatenate([state, action.astype(state.dtype)], -1)
         x = MLP(self.layers, self.act, self.norm)(x)
-        fc = hk.Linear(1, w_init=jnp.zeros)
+        fc = hk.Linear(1, w_init=hk.initializers.TruncatedNormal(1e-3))
         return fc(x)
 
 

@@ -28,20 +28,20 @@ class Config(_Config):
     # Train
     jit: bool = True
     buffer_capacity: int = 10 ** 4
-    batch_size: int = 16
-    sequence_len: int = 16
+    batch_size: int = 32
+    sequence_len: int = 32
     spi: int = 1
     learning_rate: float = 3e-4
     polyak_tau: float = 5e-3
     weight_decay: float = 1e-6
     max_grad: float = 50.
     eval_every: int = 10_000
-    train_after: int = 5000
+    train_after: int = 10_000
 
     logdir: str = 'logdir/src_asymm'
     task: str = 'src'
     action_space: str = 'discrete'
-    num_envs: int = 24
+    num_envs: int = 8
     seed: int = 0
 
 

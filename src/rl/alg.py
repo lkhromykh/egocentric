@@ -117,7 +117,6 @@ def vpi(cfg: Config, nets: Networks) -> StepFn:
             e = b + cfg.batch_size
             subbatch = tree_slice(batch, jnp.s_[b:e])
             state, metrics = step(state, subbatch)
-        print('Tracing done')
         return state, metrics
 
     return fuse
