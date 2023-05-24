@@ -41,6 +41,20 @@ class ReplayBuffer:
             batch = tree_slice(self._memory, idx)
             yield self._treedef.unflatten(batch)
 
+    def as_tfdataset(self, batch_size: int) -> 'tf.data.Dataset':
+        import tensorflow as tf
+        tf.config.set_visible_devices([], 'GPU')
+
+        def to_tf_spec(sp):
+            return tf.TensorSpec((batch_size,) + sp.shape, sp.dtype)
+
+        ds = tf.data.Dataset.from_generator(
+            lambda: self.as_generator(batch_size),
+            output_signature=tree_util.tree_map(to_tf_spec, self.signature)
+        )
+        ds = ds.prefetch(tf.data.AUTOTUNE)
+        return ds.as_numpy_iterator()
+
     def __len__(self) -> int:
         return self._len
 

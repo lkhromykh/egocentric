@@ -28,7 +28,7 @@ def main(cfg: Config):
     replay = builder.make_replay_buffer(np_rng2, env)
     grad_steps = cfg.spi * cfg.sequence_len * cfg.num_envs // cfg.batch_size
     grad_steps = max(grad_steps, 1)
-    ds = replay.as_generator(cfg.batch_size * grad_steps)
+    ds = replay.as_tfdataset(cfg.batch_size * grad_steps)
     nets = builder.make_networks(env)
     params = nets.init(next(rngseq))
     state = builder.make_training_state(next(rngseq), params)

@@ -73,6 +73,24 @@ class Builder:
         c = self.cfg
         optim = optax.adamw(c.learning_rate, weight_decay=c.weight_decay)
         optim = optax.chain(optax.clip_by_global_norm(c.max_grad), optim)
+
+        def label_fn(key):
+            match key[:5]:
+                case 'actor': return 'actor'
+                case 'criti': return 'critic'
+                case '~': return '~'
+                case _: raise ValueError(key)
+
+        labels = type(params)({
+            k: jax.tree_util.tree_map(lambda t: label_fn(k), v)
+            for k, v in params.items()
+        })
+        optim = optax.multi_transform(
+            {'actor': optim,
+             'critic': optim,
+             '~': optax.adam(c.temp_learning_rate)},
+            labels
+        )
         return TrainingState.init(rng, params, optim, c.polyak_tau)
 
     def make_replay_buffer(self,

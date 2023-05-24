@@ -22,8 +22,8 @@ def vpi(cfg: Config, nets: Networks) -> StepFn:
     sg = jax.lax.stop_gradient
     def tree_slice(t, sl): return jax.tree_util.tree_map(lambda x: x[sl], t)
 
-    def cross_entropy(q_values, log_probs):
-        tempered_q_values = sg(q_values) / cfg.entropy_coef
+    def cross_entropy(q_values, log_probs, temperature):
+        tempered_q_values = sg(q_values / temperature)
         normalized_weights = jax.nn.softmax(tempered_q_values, axis=0)
         return -jnp.sum(normalized_weights * log_probs, axis=0)
 
@@ -43,6 +43,8 @@ def vpi(cfg: Config, nets: Networks) -> StepFn:
 
         policy_t = nets.actor(params, obs_t)
         log_pi_t = policy_t[:-1].log_prob(a_t)
+        entropy = policy_t.entropy()
+        tau = jax.nn.softplus(params['~']['temperature']) + 1e-8
         pi_a_dash_t, log_pi_dash_t = policy_t.experimental_sample_and_log_prob(
             seed=rng, sample_shape=(cfg.num_actions,))
         obs_tTm1 = tree_slice(obs_t, jnp.s_[:-1])
@@ -54,38 +56,38 @@ def vpi(cfg: Config, nets: Networks) -> StepFn:
             lambda x: x.min(-1),  # pessimistic critics ensembling
             (target_q_t, target_q_dash_t)
         )
-        v_tp1 = target_q_dash_t.mean(0)[1:]
+        v_t = target_q_dash_t.mean(0) + sg(tau) * entropy
 
         in_axes = 5 * (1,) + (None,)
         resids_fn = jax.vmap(retrace, in_axes, out_axes=1)
         log_rho_t = log_pi_t - log_mu_t
         disc_t *= cfg.gamma
-        resid_t = resids_fn(target_q_t, v_tp1, r_t, disc_t,
+        resid_t = resids_fn(target_q_t, v_t[1:], r_t, disc_t,
                             log_rho_t, cfg.lambda_)
         target_q_t = jnp.expand_dims(target_q_t + resid_t, -1)
         critic_loss = jnp.square(q_t - sg(target_q_t)).mean()
 
-        entropy = policy_t.entropy()
         match cfg.action_space:
             case 'continuous':
-                actor_loss = -target_q_dash_t.mean(0)
-                actor_loss -= cfg.entropy_coef * entropy
+                actor_loss = -v_t
             case 'discrete':
-                actor_loss = cross_entropy(target_q_dash_t, log_pi_dash_t)
+                actor_loss = cross_entropy(target_q_dash_t, log_pi_dash_t, tau)
             case _:
                 raise ValueError(cfg.action_space)
         actor_loss = jnp.mean(actor_loss)
+        temp_loss = tau * sg(entropy.mean() - cfg.target_entropy)
 
         metrics = {
             'critic_loss': critic_loss,
             'actor_loss': actor_loss,
-            'qvalue_residue': resid_t.mean(),
+            'temperature_loss': temp_loss,
+            'temperature': tau,
             'entropy': entropy.mean(),
             'log_importance': log_rho_t.mean(),
             'reward': r_t.mean(),
             'value': target_q_t.mean()
         }
-        return actor_loss + critic_loss, metrics
+        return actor_loss + critic_loss + temp_loss, metrics
 
     def step(state: TrainingState,
              batch: types.Trajectory

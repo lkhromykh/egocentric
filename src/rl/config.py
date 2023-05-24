@@ -9,7 +9,7 @@ Layers = tuple[int, ...]
 class Config(_Config):
     gamma: float = .98
     lambda_: float = 1.
-    entropy_coef: float = 3e-4
+    target_entropy: float = -4.
     num_actions: int = 20
 
     # Architecture
@@ -19,7 +19,7 @@ class Config(_Config):
     cnn_depths: Layers = (32, 32, 32, 32)
     cnn_kernels: Layers = (3, 3, 3, 3)
     cnn_strides: Layers = (2, 2, 2, 2)
-    actor_keys: str = r'realsense'
+    actor_keys: str = r'robotiq|box'
     actor_layers: Layers = (256, 256)
     critic_keys: str = r'robotiq|box'
     critic_layers: Layers = (256, 256)
@@ -32,15 +32,17 @@ class Config(_Config):
     sequence_len: int = 32
     spi: int = 1
     learning_rate: float = 3e-4
+    init_temperature: float = 1e-3
+    temp_learning_rate: float = 1e-2
     polyak_tau: float = 5e-3
     weight_decay: float = 1e-6
     max_grad: float = 50.
     eval_every: int = 10_000
-    train_after: int = 10_000
+    train_after: int = 5_000
 
-    logdir: str = 'logdir/src_asymm'
+    logdir: str = 'logdir/sac_src_continuous'
     task: str = 'src'
-    action_space: str = 'discrete'
+    action_space: str = 'continuous'
     num_envs: int = 8
     seed: int = 0
 
