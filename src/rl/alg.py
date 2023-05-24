@@ -24,6 +24,7 @@ def vpi(cfg: Config, nets: Networks) -> StepFn:
 
     def cross_entropy(q_values, log_probs, temperature):
         tempered_q_values = sg(q_values / temperature)
+        tempered_q_values = jnp.clip(tempered_q_values, -1, 1)
         normalized_weights = jax.nn.softmax(tempered_q_values, axis=0)
         return -jnp.sum(normalized_weights * log_probs, axis=0)
 
