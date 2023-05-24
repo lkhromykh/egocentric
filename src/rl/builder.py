@@ -50,9 +50,9 @@ class Builder:
                     return lambda: wrap(load(
                         seed,
                         action_mode=c.action_space,
-                        img_size=(84, 84),
-                        control_timestep=.05,
-                        time_limit=2.5,
+                        img_size=(100, 100),
+                        control_timestep=.1,
+                        time_limit=5,
                     ))
             case _:
                 raise ValueError(self.cfg.task)

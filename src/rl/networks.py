@@ -121,12 +121,6 @@ class Actor(hk.Module):
                 mean = jnp.tanh(mean)
                 std = jax.nn.sigmoid(std) + 1e-3
                 dist = tfd.Normal(mean, std)
-                # TODO: Find out why truncated normal causing nans
-                # dist = tfd.TruncatedNormal(
-                #     mean, std,
-                #     low=sp.minimum.astype(mean.dtype),
-                #     high=sp.maximum.astype(mean.dtype),
-                # )
                 dist = tfd.Independent(dist, 1)
             case _:
                 raise ValueError(sp)
