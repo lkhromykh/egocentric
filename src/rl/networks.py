@@ -81,7 +81,7 @@ class Encoder(hk.Module):
         return MLP(self.mlp_layers, self.act, self.norm)(x)
 
     def _cnn(self, x):
-        x /= 255
+        x /= 255.
         prefix = x.shape[:-3]
         x = jnp.reshape(x, (np.prod(prefix, dtype=int),) + x.shape[-3:])
 

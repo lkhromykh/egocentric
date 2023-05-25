@@ -24,7 +24,7 @@ def vpi(cfg: Config, nets: Networks) -> StepFn:
 
     def cross_entropy(q_values, log_probs, temperature):
         tempered_q_values = sg(q_values / temperature)
-        tempered_q_values -= jnp.expand_dims(tempered_q_values.mean(0), 0)
+        tempered_q_values -= tempered_q_values.mean(0, keepdims=True)
         tempered_q_values = jnp.clip(tempered_q_values, -1, 1)
         normalized_weights = jax.nn.softmax(tempered_q_values, axis=0)
         return -jnp.sum(normalized_weights * log_probs, axis=0)
@@ -45,7 +45,7 @@ def vpi(cfg: Config, nets: Networks) -> StepFn:
 
         policy_t = nets.actor(params, obs_t)
         log_pi_t = policy_t[:-1].log_prob(a_t)
-        entropy = policy_t.entropy()
+        entropy_t = policy_t.entropy()
         tau = jax.nn.softplus(params['~']['temperature']) + 1e-8
         pi_a_dash_t, log_pi_dash_t = policy_t.experimental_sample_and_log_prob(
             seed=rng, sample_shape=(cfg.num_actions,))
@@ -58,7 +58,7 @@ def vpi(cfg: Config, nets: Networks) -> StepFn:
             lambda x: x.min(-1),  # pessimistic critics ensembling
             (target_q_t, target_q_dash_t)
         )
-        v_t = target_q_dash_t.mean(0) + sg(tau) * entropy
+        v_t = target_q_dash_t.mean(0) + sg(tau) * entropy_t
 
         in_axes = 5 * (1,) + (None,)
         resids_fn = jax.vmap(retrace, in_axes, out_axes=1)
@@ -77,14 +77,14 @@ def vpi(cfg: Config, nets: Networks) -> StepFn:
             case _:
                 raise ValueError(cfg.action_space)
         actor_loss = jnp.mean(actor_loss)
-        temp_loss = tau * sg(entropy.mean() - cfg.target_entropy)
+        temp_loss = tau * sg(entropy_t.mean() - cfg.target_entropy)
 
         metrics = {
             'critic_loss': critic_loss,
             'actor_loss': actor_loss,
             'temperature_loss': temp_loss,
             'temperature': tau,
-            'entropy': entropy.mean(),
+            'entropy': entropy_t.mean(),
             'log_importance': log_rho_t.mean(),
             'reward': r_t.mean(),
             'value': target_q_t.mean()

@@ -55,7 +55,7 @@ class WorkSpace(NamedTuple):
     @classmethod
     def from_halfsizes(cls,
                        half_sizes: tuple[float, float] = (.1, .1),
-                       tcp_height: tuple[float, float] = (.163, .4)
+                       tcp_height: tuple[float, float] = (.165, .4)
                        ) -> 'WorkSpace':
         x, y = half_sizes
         low, high = tcp_height
@@ -74,7 +74,7 @@ class Task(abc.ABC, _Task):
                  control_timestep: float = common.CONTROL_TIMESTEP,
                  action_mode: ActionMode = 'discrete',
                  workspace: WorkSpace = WorkSpace.from_halfsizes(),
-                 img_size: tuple[int, int] = (84, 84)
+                 img_size: tuple[int, int] = (100, 100)
                  ) -> None:
         self._control_timestep = control_timestep
         self.action_mod = action_mode.lower()

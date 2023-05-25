@@ -32,9 +32,9 @@ class Config(_Config):
     sequence_len: int = 32
     spi: int = 1
     learning_rate: float = 3e-4
-    init_temperature: float = 1e-3
+    init_temperature: float = 1e-5
     temp_learning_rate: float = 1e-2
-    polyak_tau: float = 5e-3
+    polyak_tau: float = 1e-2
     weight_decay: float = 1e-6
     max_grad: float = 50.
     eval_every: int = 10_000
