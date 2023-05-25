@@ -127,7 +127,9 @@ class Task(abc.ABC, _Task):
         pos, grip = np.split(action, [3])
         mocap_pos, _ = self._get_mocap(physics)
         self._set_mocap(physics, mocap_pos + common.CTRL_LIMIT * pos)
-        self._gripper.set_grasp(physics, float(grip > 0.))
+        grip = grip.item()
+        if grip:
+            self._gripper.set_grasp(physics, float(grip > 0.))
 
     def action_spec(self, physics):
         num_values = len(DiscreteActions)
