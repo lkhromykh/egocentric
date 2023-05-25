@@ -14,7 +14,7 @@ class Config(_Config):
 
     # Architecture
     activation: str = 'relu'
-    normalization: str = 'none'
+    normalization: str = 'rms'
     mlp_layers: Layers = ()
     cnn_depths: Layers = (32, 32, 32, 32)
     cnn_kernels: Layers = (3, 3, 3, 3)
@@ -38,7 +38,7 @@ class Config(_Config):
     weight_decay: float = 1e-6
     max_grad: float = 50.
     eval_every: int = 10_000
-    train_after: int = 5_000
+    train_after: int = 10_000
 
     logdir: str = 'logdir/src_asymm_discrete'
     task: str = 'src'

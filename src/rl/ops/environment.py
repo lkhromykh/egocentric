@@ -52,7 +52,7 @@ def train_loop(env: AutoReset,  # continue interacting after termination
         trajectory['observations'].append(obs)
         trajectory['actions'].append(action)
         trajectory['rewards'].append(ts.reward)
-        trajectory['discounts'].append(ts.discount)
+        trajectory['discounts'].append(ts.discount * np.logical_not(ts.last()))
         trajectory['log_probs'].append(log_prob)
     trajectory['observations'].append(ts.observation)
 
