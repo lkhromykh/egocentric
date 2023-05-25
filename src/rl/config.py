@@ -34,7 +34,7 @@ class Config(_Config):
     learning_rate: float = 3e-4
     init_temperature: float = 1e-5
     temp_learning_rate: float = 1e-2
-    polyak_tau: float = 1e-2
+    polyak_tau: float = 5e-3
     weight_decay: float = 1e-6
     max_grad: float = 50.
     eval_every: int = 10_000
@@ -60,7 +60,7 @@ _DEBUG_CONFIG = Config(
     sequence_len=15,
     eval_every=1,
     train_after=1,
-    spi=1,
+    utd=1,
     num_envs=1,
     jit=False
 )

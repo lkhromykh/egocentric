@@ -21,10 +21,10 @@ from src.rl.ops import train_loop, eval_loop
 def main(cfg: Config):
     rng = jax.random.PRNGKey(cfg.seed)
     rngseq = hk.PRNGSequence(rng)
-    builder = Builder(config)
+    builder = Builder(cfg)
 
     np_rng1, np_rng2 = next(rngseq).tolist()
-    env = builder.make_env(np_rng1)
+    env = builder.make_envs(np_rng1)
     replay = builder.make_replay_buffer(np_rng2, env)
     grad_steps = int(cfg.utd * cfg.sequence_len * cfg.num_envs)
     grad_steps = max(grad_steps, 1)

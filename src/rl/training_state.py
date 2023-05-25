@@ -26,7 +26,6 @@ class TrainingState(NamedTuple):
 
         updates, opt_state = self.tx(grads, opt_state, params)
         params = optax.apply_updates(params, updates)
-
         target_params = optax.incremental_update(
             params, target_params, self.target_update_var)
 

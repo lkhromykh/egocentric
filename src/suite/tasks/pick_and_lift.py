@@ -17,6 +17,8 @@ class Box(entities.BoxWithVertexSites):
 
 class PickAndLift(base.Task):
 
+    MARGIN: float = .1
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._prop = Box(
@@ -56,10 +58,8 @@ class PickAndLift(base.Task):
         lowest = physics.bind(self._prop.vertices).xpos[:, 2].min()
         return rewards.tolerance(
             lowest,
-            bounds=(.1, .3),
-            margin=.1,
+            bounds=(self.MARGIN, float('inf')),
+            margin=self.MARGIN,
             value_at_margin=0.,
             sigmoid='linear'
         )
-
-

@@ -1,4 +1,5 @@
 import os
+from typing import Callable
 
 import dm_env.specs
 import numpy as np
@@ -28,17 +29,15 @@ class Builder:
         if not os.path.exists(path := self.exp_path(Builder.CONFIG)):
             cfg.save(path)
 
-    def make_env(self, rng: int) -> dm_env.Environment:
+    def make_env_fn(self, seed: int) -> Callable[[], dm_env.Environment]:
         c = self.cfg
-        rng = np.random.default_rng(rng)
-
         def wrap(env): return AutoReset(FromOneHot(env))
         match c.task.split('_'):
             case 'dmc', domain, task:
                 from dm_control import suite
 
-                def env_fn(seed):
-                    return lambda: wrap(suite.load(
+                def env_fn():
+                    return wrap(suite.load(
                         domain, task,
                         task_kwargs={'random': seed},
                         environment_kwargs={'flat_observation': True}
@@ -46,18 +45,30 @@ class Builder:
             case ['src']:
                 from src.suite import load
 
-                def env_fn(seed):
-                    return lambda: wrap(load(
+                def env_fn():
+                    return wrap(load(
                         seed,
                         action_mode=c.action_space,
                         img_size=(100, 100),
                         control_timestep=.1,
                         time_limit=5,
                     ))
+            case ['ur_env']:
+                from ur_env.remote import RemoteEnvClient
+                address = None
+                def env_fn(): return FromOneHot(RemoteEnvClient(address))
             case _:
                 raise ValueError(self.cfg.task)
-        seeds = rng.integers(0, np.iinfo(np.int32).max, c.num_envs)
-        return AsyncEnv([env_fn(seed) for seed in seeds], context='spawn')
+
+        return env_fn
+
+    def make_envs(self, rng: int) -> dm_env.Environment:
+        rng = np.random.default_rng(rng)
+        seeds = rng.integers(0, np.iinfo(np.int32).max, self.cfg.num_envs)
+        return AsyncEnv(
+            [self.make_env_fn(seed) for seed in seeds],
+            context='spawn'
+        )
 
     def make_networks(self, env: dm_env.Environment) -> Networks:
         return Networks.make_networks(

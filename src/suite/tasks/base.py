@@ -124,10 +124,9 @@ class Task(abc.ABC, _Task):
             action = DiscreteActions.as_array(action)
         else:
             action = np.clip(action, -1, 1)
-        pos, grip = np.split(action, [3])
+        pos, grip = action[:3], action[3]
         mocap_pos, _ = self._get_mocap(physics)
         self._set_mocap(physics, mocap_pos + common.CTRL_LIMIT * pos)
-        grip = grip.item()
         if grip:
             self._gripper.set_grasp(physics, float(grip > 0.))
 
@@ -135,7 +134,7 @@ class Task(abc.ABC, _Task):
         num_values = len(DiscreteActions)
         match self.action_mod:
             case 'discrete':
-                return specs.DiscreteArray(num_values)
+                return specs.DiscreteArray(num_values, dtype=np.int32)
             case 'continuous':
                 lim = np.full((num_values // 2,), 1, dtype=np.float32)
                 return specs.BoundedArray(
