@@ -28,9 +28,9 @@ class Config(_Config):
     # Train
     jit: bool = True
     buffer_capacity: int = 10 ** 4
-    batch_size: int = 32
-    sequence_len: int = 32
-    spi: int = 1
+    batch_size: int = 16
+    sequence_len: int = 16
+    utd: float = .1
     learning_rate: float = 3e-4
     init_temperature: float = 1e-5
     temp_learning_rate: float = 1e-2
@@ -43,7 +43,7 @@ class Config(_Config):
     logdir: str = 'logdir/src_asymm_discrete'
     task: str = 'src'
     action_space: str = 'discrete'
-    num_envs: int = 8
+    num_envs: int = 16
     seed: int = 0
 
 

@@ -26,7 +26,7 @@ def main(cfg: Config):
     np_rng1, np_rng2 = next(rngseq).tolist()
     env = builder.make_env(np_rng1)
     replay = builder.make_replay_buffer(np_rng2, env)
-    grad_steps = cfg.spi * cfg.sequence_len * cfg.num_envs // cfg.batch_size
+    grad_steps = int(cfg.utd * cfg.sequence_len * cfg.num_envs)
     grad_steps = max(grad_steps, 1)
     ds = replay.as_tfdataset(cfg.batch_size * grad_steps)
     nets = builder.make_networks(env)
@@ -34,7 +34,6 @@ def main(cfg: Config):
     state = builder.make_training_state(next(rngseq), params)
     step = builder.make_step_fn(nets)
     logger = loggers.TFSummaryLogger(cfg.logdir, label='', step_key='step')
-    print('Fusing %d gradient steps' % grad_steps)
     print("Number of params: %d" % hk.data_structures.tree_size(params))
 
     def policy(obs, train=True):

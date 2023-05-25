@@ -121,6 +121,7 @@ def vpi(cfg: Config, nets: Networks) -> StepFn:
             e = b + cfg.batch_size
             subbatch = tree_slice(batch, jnp.s_[b:e])
             state, metrics = step(state, subbatch)
+        print('Fusing %d gradient steps' % num_steps)
         return state, metrics
 
     return fuse
