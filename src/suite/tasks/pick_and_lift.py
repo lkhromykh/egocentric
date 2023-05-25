@@ -17,7 +17,7 @@ class Box(entities.BoxWithVertexSites):
 
 class PickAndLift(base.Task):
 
-    MARGIN: float = .1
+    MARGIN: float = .15
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
