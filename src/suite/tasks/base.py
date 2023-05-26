@@ -1,13 +1,14 @@
 import abc
-from typing import NamedTuple, Literal
 from enum import IntEnum
+from typing import NamedTuple, Literal
 
 import numpy as np
 from dm_env import specs
 
+from dm_control.composer import variation
 from dm_control.composer.task import Task as _Task
 from dm_control.manipulation.shared import workspaces
-from dm_control.composer import variation
+from dm_control.composer.variation import noises, distributions
 
 from src.suite import common
 from src.suite import entities
@@ -68,12 +69,15 @@ class WorkSpace(NamedTuple):
         return cls(box_fn(0.05, 0.05), box_fn(low, high))
 
 
+_DEFAULT_WORKSPACE = WorkSpace.from_halfsizes()
+
+
 class Task(abc.ABC, _Task):
 
     def __init__(self,
                  control_timestep: float = common.CONTROL_TIMESTEP,
                  action_mode: ActionMode = 'discrete',
-                 workspace: WorkSpace = WorkSpace.from_halfsizes(),
+                 workspace: WorkSpace = _DEFAULT_WORKSPACE,
                  img_size: tuple[int, int] = (100, 100)
                  ) -> None:
         self._control_timestep = control_timestep
@@ -93,25 +97,21 @@ class Task(abc.ABC, _Task):
         self._arena.add_free_entity(self._gripper, offset)
         self._weld = self._arena.attach_to_mocap(self._gripper.base_mount)
 
-        # self._physics_variation = variation.PhysicsVariator() task randomization
-        # self._mjcf_variation = variation.MJCFVariator()  domain randomization
-        rb = self.root_entity.mjcf_model.worldbody
+        self._physics_variation = variation.PhysicsVariator()
+        self._mjcf_variation = variation.MJCFVariator()
         workspaces.add_bbox_site(
-            body=rb,
-            lower=workspace.prop_box.lower,
-            upper=workspace.prop_box.upper,
-            rgba=common.BLUE,
-            name='prop_spawn'
-        )
-        workspaces.add_bbox_site(
-            body=rb,
+            body=self.root_entity.mjcf_model.worldbody,
             lower=workspace.tcp_box.lower,
             upper=workspace.tcp_box.upper,
             rgba=common.GREEN,
             name='mocap_bbox'
         )
 
+    def initialize_episode_mjcf(self, random_state):
+        self._mjcf_variation.apply_variations(random_state)
+
     def initialize_episode(self, physics, random_state):
+        self._physics_variation.apply_variations(physics, random_state)
         pos = self.workspace.tcp_box.sample(random_state)
         quat = common.DOWN_QUATERNION
         self._set_mocap(physics, pos, quat)
@@ -165,3 +165,54 @@ class Task(abc.ABC, _Task):
     @property
     def task_observables(self):
         return self._task_observables
+
+    def _build_variations(self):
+        """Domain randomization goes here."""
+        self._mjcf_variation.clear()
+        uni = distributions.Uniform
+
+        def eq_noise(low, high):
+            def noise_fn(init, cur, rng):
+                noise = rng.uniform(low, high)
+                return np.full_like(init, noise)
+            return noise_fn
+
+        for light in self.root_entity.mjcf_model.worldbody.find_all('light'):
+            self._mjcf_variation.bind_attributes(
+                light,
+                pos=noises.Additive(uni(-.2, .2)),
+                diffuse=eq_noise(.4, .7),
+                specular=eq_noise(.1, .4),
+                ambient=eq_noise(.2, .5)
+            )
+
+        def rgb(init, cur, random_state):
+            noise = random_state.uniform(.3, 1.)
+            noise = np.repeat(noise, len(init) - 1)
+            return np.concatenate([noise, [1.]])
+        self._mjcf_variation.bind_attributes(
+            self._arena.groundplane_material,
+            rgba=rgb
+        )
+
+        def axis_var(dist, sl):
+            def noise_fn(init, cur, rng):
+                zeros = np.zeros_like(init)
+                zeros[sl] = dist(init[sl], cur[sl], rng)
+                return zeros
+            return noise_fn
+        self._mjcf_variation.bind_attributes(
+            self._camera,
+            pos=noises.Additive(axis_var(uni(-.01, .01), 1)),
+            quat=noises.Additive(axis_var(uni(-.04, .04), 3)),
+            fovy=noises.Additive(uni(-10, 10))
+        )
+
+    def _build_observables(self):
+        """Enable required observables."""
+        def noisy_cam(img, random_state):
+            black = np.uint8([0, 0, 0])
+            mask = random_state.binomial(1, .05, img.shape[:-1])
+            mask = np.expand_dims(mask, -1)
+            return np.where(mask, black, img)
+        self._task_observables['realsense/image'].corruptor = noisy_cam

@@ -9,7 +9,7 @@ Layers = tuple[int, ...]
 class Config(_Config):
     gamma: float = .98
     lambda_: float = 1.
-    target_entropy: float = .2
+    target_entropy: float = .1
     num_actions: int = 20
 
     # Architecture
@@ -40,7 +40,7 @@ class Config(_Config):
     eval_every: int = 10_000
     train_after: int = 10_000
 
-    logdir: str = 'logdir/src_asymm_discrete'
+    logdir: str = 'logdir/src_asymm_discrete_dr'
     task: str = 'src'
     action_space: str = 'discrete'
     num_envs: int = 16

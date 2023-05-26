@@ -50,10 +50,10 @@ class Builder:
                         seed,
                         action_mode=c.action_space,
                         img_size=(100, 100),
-                        control_timestep=.1,
-                        time_limit=5,
+                        control_timestep=.05,
+                        time_limit=2.5,
                     ))
-            case ['ur_env']:
+            case 'ur', _:
                 from ur_env.remote import RemoteEnvClient
                 address = None
                 def env_fn(): return FromOneHot(RemoteEnvClient(address))

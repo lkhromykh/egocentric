@@ -32,7 +32,7 @@ class Arena(Entity):
             name='groundplane',
             specular=.7,
             shininess=.1,
-            reflectance=.01,
+            reflectance=.0,
             rgba=(.4, .4, .4, 1.)
         )
         self._groundplane = self._mjcf_root.worldbody.add(
@@ -43,7 +43,7 @@ class Arena(Entity):
             size=(4, 1.5, 0.01),
             friction=(.4,),
             solimp=(.95, .99, .001),
-            solref=(.002, 1.)
+            solref=(.005, 1.)
         )
         self._room_light = self._mjcf_root.worldbody.add(
             'light',
