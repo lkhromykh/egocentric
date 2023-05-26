@@ -22,12 +22,12 @@ class Config(_Config):
     actor_keys: str = r'realsense'
     actor_layers: Layers = (256, 256, 256)
     critic_keys: str = r'robotiq|box'
-    critic_layers: Layers = (512, 256, 256)
+    critic_layers: Layers = (256, 256, 256)
     ensemble_size: int = 1
 
     # Train
     jit: bool = True
-    buffer_capacity: int = 10 ** 4
+    buffer_capacity: int = 10 ** 3
     batch_size: int = 16
     sequence_len: int = 16
     utd: float = .1
@@ -40,7 +40,7 @@ class Config(_Config):
     eval_every: int = 10_000
     train_after: int = 10_000
 
-    logdir: str = 'logdir/src_asymm_discrete_dr'
+    logdir: str = 'logdir/src_symm_discrete_dr_newent'
     task: str = 'src'
     action_space: str = 'discrete'
     num_envs: int = 16

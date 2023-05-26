@@ -2,6 +2,7 @@ from typing import Callable
 
 import jax
 import jax.numpy as jnp
+from jax.scipy.special import logsumexp
 import haiku as hk
 import chex
 import optax
@@ -23,11 +24,13 @@ def vpi(cfg: Config, nets: Networks) -> StepFn:
     def tree_slice(t, sl): return jax.tree_util.tree_map(lambda x: x[sl], t)
 
     def cross_entropy(q_values, log_probs, temperature):
-        tempered_q_values = sg(q_values / temperature)
-        tempered_q_values -= tempered_q_values.mean(0, keepdims=True)
-        tempered_q_values = jnp.clip(tempered_q_values, -1, 1)
+        tempered_q_values = sg(q_values) / temperature
         normalized_weights = jax.nn.softmax(tempered_q_values, axis=0)
-        return -jnp.sum(normalized_weights * log_probs, axis=0)
+        normalized_weights = sg(normalized_weights)
+        cross_entropy_loss = -jnp.sum(normalized_weights * log_probs, axis=0)
+        temp_loss = logsumexp(tempered_q_values, 0) - cfg.target_entropy
+        temp_loss *= temperature
+        return cross_entropy_loss, temp_loss
 
     def loss_fn(
             params: hk.Params,
@@ -72,12 +75,13 @@ def vpi(cfg: Config, nets: Networks) -> StepFn:
         match cfg.action_space:
             case 'continuous':
                 actor_loss = -v_t
+                temp_loss = tau * sg(entropy_t - cfg.target_entropy)
             case 'discrete':
-                actor_loss = cross_entropy(target_q_dash_t, log_pi_dash_t, tau)
+                actor_loss, temp_loss = cross_entropy(target_q_dash_t, log_pi_dash_t, tau)
             case _:
                 raise ValueError(cfg.action_space)
         actor_loss = jnp.mean(actor_loss)
-        temp_loss = tau * sg(entropy_t.mean() - cfg.target_entropy)
+        temp_loss = jnp.mean(temp_loss)
 
         metrics = {
             'critic_loss': critic_loss,
