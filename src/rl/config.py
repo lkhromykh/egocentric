@@ -9,7 +9,7 @@ Layers = tuple[int, ...]
 class Config(_Config):
     gamma: float = .98
     lambda_: float = 1.
-    target_entropy: float = .1
+    entropy_per_dim: float = .5
     num_actions: int = 20
 
     # Architecture
