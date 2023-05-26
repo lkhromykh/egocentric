@@ -76,7 +76,7 @@ def vpi(cfg: Config, nets: Networks) -> StepFn:
         match cfg.action_space:
             case 'continuous':
                 actor_loss = -v_t
-                target_entropy = - cfg.entropy_per_dim * act_dim
+                target_entropy = (cfg.entropy_per_dim - 1.) * act_dim
                 temp_loss = tau * sg(entropy_t - target_entropy)
             case 'discrete':
                 target_entropy = cfg.entropy_per_dim * jnp.log(act_dim)
