@@ -78,8 +78,9 @@ class PickAndLift(base.Task):
                 noise = dist(init, cur, rng)
                 return noise[idx]
             return noise_fn
-        uni = distributions.Uniform(0, 1.)
-        rgba = [axis_var(uni, i) for i in range(3)]
+        uni = distributions.Uniform
+        rgba = [uni(.5, 1.), uni(0, .5), uni(0, .5)]
+        rgba = [axis_var(dist, i) for i, dist in enumerate(rgba)]
         rgba = RgbVariation(*rgba)
         self._mjcf_variation.bind_attributes(
             self._prop.geom,

@@ -16,18 +16,18 @@ class Config(_Config):
     activation: str = 'relu'
     normalization: str = 'rms'
     mlp_layers: Layers = ()
-    cnn_depths: Layers = (32, 32, 32, 32)
+    cnn_depths: Layers = (48, 48, 48, 48)
     cnn_kernels: Layers = (3, 3, 3, 3)
     cnn_strides: Layers = (2, 2, 2, 2)
     actor_keys: str = r'realsense'
-    actor_layers: Layers = (256, 256, 256)
+    actor_layers: Layers = (256, 256)
     critic_keys: str = r'robotiq|box'
-    critic_layers: Layers = (256, 256, 256)
+    critic_layers: Layers = (512, 256, 256)
     ensemble_size: int = 1
 
     # Train
     jit: bool = True
-    buffer_capacity: int = 10 ** 3
+    buffer_capacity: int = 10 ** 4
     batch_size: int = 16
     sequence_len: int = 16
     utd: float = .1
@@ -38,7 +38,7 @@ class Config(_Config):
     weight_decay: float = 1e-6
     max_grad: float = 50.
     eval_every: int = 10_000
-    train_after: int = 10_000
+    train_after: int = 5_000
 
     logdir: str = 'logdir/src_asymm_discrete_dr_newent_wtermination'
     task: str = 'src'
