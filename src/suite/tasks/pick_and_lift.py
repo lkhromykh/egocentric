@@ -66,9 +66,9 @@ class PickAndLift(base.Task):
             sigmoid='linear'
         )
 
-    def should_terminate_episode(self, physics):
-        reward = self.get_reward(physics)
-        return reward == 1.
+    # def should_terminate_episode(self, physics):
+    #     reward = self.get_reward(physics)
+    #     return reward == 1.
 
     def _build_variations(self):
         super()._build_variations()
