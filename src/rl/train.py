@@ -32,6 +32,11 @@ def main(cfg: Config):
     nets = builder.make_networks(env)
     params = nets.init(next(rngseq))
     state = builder.make_training_state(next(rngseq), params)
+    if os.path.exists(path := builder.exp_path(Builder.PARAMS)):
+        print('Loading existing params.')
+        with open(path, 'rb') as f:
+            params = pickle.load(f)
+            state.params = jax.device_put(params)
     step = builder.make_step_fn(nets)
     logger = loggers.TFSummaryLogger(cfg.logdir, label='', step_key='step')
     print("Number of params: %d" % hk.data_structures.tree_size(params))

@@ -123,7 +123,7 @@ def vpi(cfg: Config, nets: Networks) -> StepFn:
     def fuse(state: TrainingState,
              batch: types.Trajectory,
              ) -> tuple[TrainingState, types.Metrics]:
-        # not passing num steps for compliance with the step signature.
+        # Not passing num steps for compliance with the step signature.
         num_steps = len(jax.tree_util.tree_leaves(batch)[0])
         num_steps //= cfg.batch_size
         for i in range(num_steps):

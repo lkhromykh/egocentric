@@ -93,9 +93,10 @@ class Task(abc.ABC, _Task):
             height=h, width=w
         )
         offset = self.workspace.tcp_box.center
-        self._arena.mocap.pos = offset
         self._arena.add_free_entity(self._gripper, offset)
-        self._weld = self._arena.attach_to_mocap(self._gripper.base_mount)
+        relpose = np.array([0, 0, 0, 1., 0, 0, 0])
+        self._weld = self._arena.attach_to_mocap(
+            self._gripper.base_mount, relpose)
 
         self._physics_variation = variation.PhysicsVariator()
         self._mjcf_variation = variation.MJCFVariator()
@@ -113,11 +114,8 @@ class Task(abc.ABC, _Task):
     def initialize_episode(self, physics, random_state):
         self._physics_variation.apply_variations(physics, random_state)
         pos = self.workspace.tcp_box.sample(random_state)
-        quat = common.DOWN_QUATERNION
-        self._set_mocap(physics, pos, quat)
-        base = physics.bind(self._gripper.base_mount)
-        while not np.allclose(base.xpos, pos, atol=1e-2):
-            physics.step()
+        self._set_mocap(physics, pos, common.DOWN_QUATERNION)
+        self._gripper.set_pose(physics, pos, common.DOWN_QUATERNION)
 
     def before_step(self, physics, action, random_state):
         if self.action_mod == 'discrete':
@@ -187,7 +185,8 @@ class Task(abc.ABC, _Task):
             )
 
         def rgb(init, cur, random_state):
-            noise = random_state.uniform(0., 1., len(init) - 1)
+            noise = random_state.uniform(.3, 1.)
+            noise = np.repeat(noise, len(init) - 1)
             return np.concatenate([noise, [1.]])
         self._mjcf_variation.bind_attributes(
             self._arena.groundplane_material,

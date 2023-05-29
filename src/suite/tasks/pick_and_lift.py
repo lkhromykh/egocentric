@@ -33,7 +33,9 @@ class PickAndLift(base.Task):
             props=[self._prop],
             position=distributions.Uniform(*self.workspace.prop_box),
             ignore_collisions=False,
-            settle_physics=True
+            settle_physics=True,
+            min_settle_physics_time=.5,
+            max_settle_physics_time=.5,
         )
         lower = self.workspace.tcp_box.lower.copy()
         upper = self.workspace.tcp_box.upper.copy()
@@ -74,7 +76,9 @@ class PickAndLift(base.Task):
             return np.concatenate([noise, [1.]])
         self._mjcf_variation.bind_attributes(
             self._prop.geom,
-            rgba=rgb
+            rgba=rgb,
+            size=distributions.Uniform(.02, .035),
+            mass=distributions.Uniform(.05, .5)
         )
 
     def _build_observables(self):

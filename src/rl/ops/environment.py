@@ -5,7 +5,6 @@ import dm_env.specs
 import numpy as np
 from jax.tree_util import tree_map
 from rltools.dmc_wrappers.base import Wrapper
-from rltools.dmc_wrappers import AutoReset
 
 from src.rl import types_ as types
 
@@ -38,13 +37,13 @@ class FromOneHot(Wrapper):
         return self._act_spec
 
 
-def train_loop(env: AutoReset,  # continue interacting after termination
+def train_loop(env: dm_env.Environment,
                policy: ActionLogProbFn,
                num_steps: int,
                prev_timestep: dm_env.TimeStep | None = None,
                ) -> tuple[types.Trajectory, dm_env.TimeStep]:
     trajectory = collections.defaultdict(list)
-    ts = env.reset()
+    ts = env.reset()  # todo: preserve correct obs and disc for bootstrapping.
     for _ in range(num_steps):
         assert not np.any(ts.last())
         obs = ts.observation
