@@ -1,9 +1,9 @@
+import numpy as np
 from dm_control.composer import initializers
 from dm_control.composer.observation import observable
 from dm_control.composer.environment import EpisodeInitializationError
 from dm_control.utils import rewards
 from dm_control.composer.variation import distributions
-from dm_control.composer.variation.colors import RgbVariation
 from dm_control.manipulation.shared import workspaces
 
 from src.suite import entities
@@ -66,25 +66,15 @@ class PickAndLift(base.Task):
             sigmoid='linear'
         )
 
-    # def should_terminate_episode(self, physics):
-    #     reward = self.get_reward(physics)
-    #     return reward == 1.
-
     def _build_variations(self):
         super()._build_variations()
 
-        def axis_var(dist, idx):
-            def noise_fn(init, cur, rng):
-                noise = dist(init, cur, rng)
-                return noise[idx]
-            return noise_fn
-        uni = distributions.Uniform
-        rgba = [uni(.5, 1.), uni(0, .5), uni(0, .5)]
-        rgba = [axis_var(dist, i) for i, dist in enumerate(rgba)]
-        rgba = RgbVariation(*rgba)
+        def rgb(init, cur, rng):
+            noise = rng.uniform(0, 1, len(init) - 1)
+            return np.concatenate([noise, [1.]])
         self._mjcf_variation.bind_attributes(
             self._prop.geom,
-            rgba=rgba
+            rgba=rgb
         )
 
     def _build_observables(self):

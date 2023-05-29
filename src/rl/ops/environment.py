@@ -32,7 +32,7 @@ class FromOneHot(Wrapper):
     def step(self, action: types.Action) -> dm_env.TimeStep:
         if self._is_discrete:
             action = action.argmax(-1)
-        return super().step(action)
+        return self.env.step(action)
 
     def action_spec(self) -> dm_env.specs.Array:
         return self._act_spec

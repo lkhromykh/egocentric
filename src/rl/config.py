@@ -29,8 +29,8 @@ class Config(_Config):
     jit: bool = True
     buffer_capacity: int = 10 ** 4
     batch_size: int = 16
-    sequence_len: int = 40
-    utd: float = .1
+    sequence_len: int = 32
+    utd: float = .05
     learning_rate: float = 3e-4
     init_temperature: float = 1e-5
     temp_learning_rate: float = 1e-2
@@ -40,7 +40,7 @@ class Config(_Config):
     eval_every: int = 5_000
     train_after: int = 5_000
 
-    logdir: str = 'logdir/src_asymm_discrete_hardreset'
+    logdir: str = 'logdir/src_asymm_discrete_hardreset_dr'
     task: str = 'src'
     action_space: str = 'discrete'
     num_envs: int = 16

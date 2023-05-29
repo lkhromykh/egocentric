@@ -187,25 +187,24 @@ class Task(abc.ABC, _Task):
             )
 
         def rgb(init, cur, random_state):
-            noise = random_state.uniform(.3, 1.)
-            noise = np.repeat(noise, len(init) - 1)
+            noise = random_state.uniform(0., 1., len(init) - 1)
             return np.concatenate([noise, [1.]])
         self._mjcf_variation.bind_attributes(
             self._arena.groundplane_material,
             rgba=rgb
         )
 
-        def axis_var(dist, sl):
+        def axis_var(dist, idx):
             def noise_fn(init, cur, rng):
-                zeros = np.zeros_like(init)
-                zeros[sl] = dist(init[sl], cur[sl], rng)
-                return zeros
+                noise = np.zeros_like(init)
+                noise[idx] = dist(init[idx], cur[idx], rng)
+                return init + noise
             return noise_fn
         self._mjcf_variation.bind_attributes(
             self._camera,
-            pos=noises.Additive(axis_var(uni(-.01, .01), 1)),
-            quat=noises.Additive(axis_var(uni(-.04, .04), 3)),
-            fovy=noises.Additive(uni(-10, 10))
+            pos=axis_var(uni(-.015, .015), 1),
+            quat=axis_var(uni(-.06, .06), 3),
+            fovy=noises.Additive(uni(-15, 15))
         )
 
     def _build_observables(self):
@@ -214,5 +213,8 @@ class Task(abc.ABC, _Task):
             black = np.uint8([0, 0, 0])
             mask = random_state.binomial(1, .05, img.shape[:-1])
             mask = np.expand_dims(mask, -1)
-            return np.where(mask, black, img)
+            img = np.where(mask, black, img)
+            noise = random_state.randint(-15, 15, img.shape)
+            img = np.clip(img + noise, 0, 255).astype(img.dtype)
+            return img
         self._task_observables['realsense/image'].corruptor = noisy_cam
