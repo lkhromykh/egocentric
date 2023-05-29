@@ -44,15 +44,16 @@ def train_loop(env: AutoReset,  # continue interacting after termination
                prev_timestep: dm_env.TimeStep | None = None,
                ) -> tuple[types.Trajectory, dm_env.TimeStep]:
     trajectory = collections.defaultdict(list)
-    ts = prev_timestep or env.reset()
+    ts = env.reset()
     for _ in range(num_steps):
+        assert not np.any(ts.last())
         obs = ts.observation
         action, log_prob = policy(obs)
         ts = env.step(action)
         trajectory['observations'].append(obs)
         trajectory['actions'].append(action)
         trajectory['rewards'].append(ts.reward)
-        trajectory['discounts'].append(ts.discount * np.logical_not(ts.last()))
+        trajectory['discounts'].append(ts.discount)
         trajectory['log_probs'].append(log_prob)
     trajectory['observations'].append(ts.observation)
 
@@ -72,6 +73,7 @@ def eval_loop(env: dm_env.Environment, policy: ActionLogProbFn) -> np.float:
     while cont.any():
         action, _ = policy(ts.observation)
         ts = env.step(action)
-        reward += cont * ts.reward
+        r = ts.reward
+        reward += cont * np.where(r == None, 0., r).astype(float)
         cont *= np.logical_not(ts.last())
     return reward

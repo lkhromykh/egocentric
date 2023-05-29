@@ -9,7 +9,7 @@ Layers = tuple[int, ...]
 class Config(_Config):
     gamma: float = .98
     lambda_: float = 1.
-    entropy_per_dim: float = .2
+    entropy_per_dim: float = .1
     num_actions: int = 20
 
     # Architecture
@@ -29,7 +29,7 @@ class Config(_Config):
     jit: bool = True
     buffer_capacity: int = 10 ** 4
     batch_size: int = 16
-    sequence_len: int = 16
+    sequence_len: int = 40
     utd: float = .1
     learning_rate: float = 3e-4
     init_temperature: float = 1e-5
@@ -37,10 +37,10 @@ class Config(_Config):
     polyak_tau: float = 5e-3
     weight_decay: float = 1e-6
     max_grad: float = 50.
-    eval_every: int = 10_000
+    eval_every: int = 5_000
     train_after: int = 5_000
 
-    logdir: str = 'logdir/src_asymm_discrete_dr_newent_notermination'
+    logdir: str = 'logdir/src_asymm_discrete_hardreset'
     task: str = 'src'
     action_space: str = 'discrete'
     num_envs: int = 16

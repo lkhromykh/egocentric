@@ -46,12 +46,12 @@ class Builder:
                 from src.suite import load
 
                 def env_fn():
-                    return wrap(load(
+                    return FromOneHot(load(
                         seed,
                         action_mode=c.action_space,
                         img_size=(100, 100),
                         control_timestep=.05,
-                        time_limit=5.,
+                        time_limit=2.5,
                     ))
             case 'ur', _:
                 from ur_env.remote import RemoteEnvClient

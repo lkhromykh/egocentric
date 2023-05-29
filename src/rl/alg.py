@@ -87,6 +87,7 @@ def vpi(cfg: Config, nets: Networks) -> StepFn:
         actor_loss = jnp.mean(actor_loss)
         temp_loss = jnp.mean(temp_loss)
 
+        adv_gap = target_q_dash_t.max(0) - target_q_dash_t.min(0)
         metrics = {
             'critic_loss': critic_loss,
             'actor_loss': actor_loss,
@@ -95,7 +96,8 @@ def vpi(cfg: Config, nets: Networks) -> StepFn:
             'entropy': entropy_t.mean(),
             'log_importance': log_rho_t.mean(),
             'reward': r_t.mean(),
-            'value': target_q_t.mean()
+            'value': target_q_t.mean(),
+            'adv_gap': adv_gap.mean(),
         }
         return actor_loss + critic_loss + temp_loss, metrics
 
