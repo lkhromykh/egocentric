@@ -78,7 +78,7 @@ class Task(abc.ABC, _Task):
                  control_timestep: float = common.CONTROL_TIMESTEP,
                  action_mode: ActionMode = 'discrete',
                  workspace: WorkSpace = _DEFAULT_WORKSPACE,
-                 img_size: tuple[int, int] = (100, 100)
+                 img_size: tuple[int, int] = (128, 128)
                  ) -> None:
         self._control_timestep = control_timestep
         self.action_mod = action_mode.lower()

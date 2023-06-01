@@ -49,7 +49,7 @@ class Builder:
                     return wrap(load(
                         seed,
                         action_mode=c.action_space,
-                        img_size=(100, 100),
+                        img_size=(128, 128),
                         control_timestep=.05,
                         time_limit=3.5,
                     ))

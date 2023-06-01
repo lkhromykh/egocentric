@@ -1,4 +1,4 @@
-import os
+import glob
 
 import numpy as np
 from dm_control.composer import initializers
@@ -51,7 +51,8 @@ class PickAndLift(base.Task):
     def initialize_episode_mjcf(self, random_state):
         super().initialize_episode_mjcf(random_state)
         path = entities.HouseholdItem.DATA_DIR
-        prop = random_state.choice(os.listdir(path))
+        items = glob.glob(path+'/*.zip')
+        # prop = random_state.choice(items)
         self._prop.detach()
         # self._prop = entities.HouseholdItem(prop)
         self._prop = Box(
