@@ -66,7 +66,7 @@ class WorkSpace(NamedTuple):
                 lower=np.float32([-x, -y, l]),
                 upper=np.float32([x, y, h])
             )
-        return cls(box_fn(0.05, 0.05), box_fn(low, high))
+        return cls(box_fn(0.1, 0.1), box_fn(low, high))
 
 
 _DEFAULT_WORKSPACE = WorkSpace.from_halfsizes()
@@ -202,7 +202,7 @@ class Task(abc.ABC, _Task):
         self._mjcf_variation.bind_attributes(
             self._camera,
             pos=axis_var(uni(-.015, .015), 1),
-            quat=axis_var(uni(-.06, .06), 3),
+            quat=axis_var(uni(-.05, .05), 3),
             fovy=noises.Additive(uni(-15, 15))
         )
 

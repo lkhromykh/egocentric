@@ -6,7 +6,7 @@ import numpy as np
 import jax
 import optax
 import haiku as hk
-from rltools.dmc_wrappers import AutoReset, AsyncEnv
+from rltools.dmc_wrappers import AsyncEnv
 
 from src.rl.replay_buffer import ReplayBuffer
 from src.rl.networks import Networks
@@ -31,7 +31,7 @@ class Builder:
 
     def make_env_fn(self, seed: int) -> Callable[[], dm_env.Environment]:
         c = self.cfg
-        def wrap(env): return AutoReset(FromOneHot(env))
+        def wrap(env): return FromOneHot(env)
         match c.task.split('_'):
             case 'dmc', domain, task:
                 from dm_control import suite
@@ -46,17 +46,17 @@ class Builder:
                 from src.suite import load
 
                 def env_fn():
-                    return FromOneHot(load(
+                    return wrap(load(
                         seed,
                         action_mode=c.action_space,
                         img_size=(100, 100),
                         control_timestep=.05,
-                        time_limit=2.5,
+                        time_limit=3.5,
                     ))
             case 'ur', _:
                 from ur_env.remote import RemoteEnvClient
                 address = None
-                def env_fn(): return FromOneHot(RemoteEnvClient(address))
+                def env_fn(): return wrap(RemoteEnvClient(address))
             case _:
                 raise ValueError(self.cfg.task)
 
@@ -86,10 +86,10 @@ class Builder:
         optim = optax.chain(optax.clip_by_global_norm(c.max_grad), optim)
 
         def label_fn(key):
-            match key[:5]:
-                case 'actor': return 'actor'
-                case 'criti': return 'critic'
-                case '~': return '~'
+            match key[0]:
+                case 'a': return 'actor'
+                case 'c': return 'critic'
+                case '~': return 'dual'
                 case _: raise ValueError(key)
 
         labels = type(params)({
@@ -99,7 +99,7 @@ class Builder:
         optim = optax.multi_transform(
             {'actor': optim,
              'critic': optim,
-             '~': optax.adam(c.temp_learning_rate)},
+             'dual': optax.adam(c.temp_learning_rate)},
             labels
         )
         return TrainingState.init(rng, params, optim, c.polyak_tau)

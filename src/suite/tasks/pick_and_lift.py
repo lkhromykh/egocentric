@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 from dm_control.composer import initializers
 from dm_control.composer.observation import observable
@@ -19,7 +21,7 @@ class Box(entities.BoxWithVertexSites):
 
 class PickAndLift(base.Task):
 
-    MARGIN: float = .15
+    MARGIN: float = .2
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -28,15 +30,10 @@ class PickAndLift(base.Task):
             mass=common.BOX_MASS,
         )
         self._prop.geom.rgba = (1., 0, 0, 1.)
+        # self._prop = entities.HouseholdItem('Ultra_JarroDophilus.zip')
+        self._prop_placer = None
+        self._prop_height = None
         self._arena.add_free_entity(self._prop)
-        self._prop_placer = initializers.PropPlacer(
-            props=[self._prop],
-            position=distributions.Uniform(*self.workspace.prop_box),
-            ignore_collisions=False,
-            settle_physics=True,
-            min_settle_physics_time=.5,
-            max_settle_physics_time=.5,
-        )
         lower = self.workspace.tcp_box.lower.copy()
         upper = self.workspace.tcp_box.upper.copy()
         lower[2] = self.MARGIN
@@ -51,34 +48,49 @@ class PickAndLift(base.Task):
         self._build_variations()
         self._build_observables()
 
+    def initialize_episode_mjcf(self, random_state):
+        super().initialize_episode_mjcf(random_state)
+        path = entities.HouseholdItem.DATA_DIR
+        prop = random_state.choice(os.listdir(path))
+        self._prop.detach()
+        # self._prop = entities.HouseholdItem(prop)
+        self._prop = Box(
+            half_lengths=common.BOX_SIZE,
+            mass=common.BOX_MASS,
+        )
+        self._prop.observables.enable_all()
+        self._prop.geom.rgba = np.concatenate(
+            [random_state.uniform(0, 1, 3), [1.]])
+        self._arena.add_free_entity(self._prop)
+        self._prop_placer = initializers.PropPlacer(
+            props=[self._prop],
+            position=distributions.Uniform(*self.workspace.prop_box),
+            # quaternion=workspaces.uniform_z_rotation,
+            ignore_collisions=False,
+            settle_physics=True,
+            min_settle_physics_time=1.,
+            max_settle_physics_time=1.,
+        )
+
     def initialize_episode(self, physics, random_state):
         try:
-            super().initialize_episode(physics, random_state)
+            self._gripper.set_pose(physics, self.workspace.tcp_box.upper)
             self._prop_placer(physics, random_state)
+            super().initialize_episode(physics, random_state)
+            pos, _ = self._prop.get_pose(physics)
+            self._prop_height = pos[2]
         except Exception as exp:
             raise EpisodeInitializationError(exp) from exp
 
     def get_reward(self, physics):
-        lowest = physics.bind(self._prop.vertices).xpos[:, 2].min()
+        pos, _ = self._prop.get_pose(physics)
+        height = pos[2] - self._prop_height
         return rewards.tolerance(
-            lowest,
+            height,
             bounds=(self.MARGIN, float('inf')),
             margin=self.MARGIN,
             value_at_margin=0.,
             sigmoid='linear'
-        )
-
-    def _build_variations(self):
-        super()._build_variations()
-
-        def rgb(init, cur, rng):
-            noise = rng.uniform(0, 1, len(init) - 1)
-            return np.concatenate([noise, [1.]])
-        self._mjcf_variation.bind_attributes(
-            self._prop.geom,
-            rgba=rgb,
-            size=distributions.Uniform(.02, .035),
-            mass=distributions.Uniform(.05, .5)
         )
 
     def _build_observables(self):
@@ -88,9 +100,8 @@ class PickAndLift(base.Task):
             tcp_pos = physics.bind(self._gripper.tool_center_point).xpos
             obj_pos, _ = self._prop.get_pose(physics)
             return obj_pos - tcp_pos
-        self._task_observables['box/distance'] = observable.Generic(distance)
+        self._task_observables['item/distance'] = observable.Generic(distance)
         for obs in self._task_observables.values():
             obs.enabled = True
         self._gripper.observables.enable_all()
         self._prop.observables.enable_all()
-

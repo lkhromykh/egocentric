@@ -43,16 +43,17 @@ def train_loop(env: dm_env.Environment,
                prev_timestep: dm_env.TimeStep | None = None,
                ) -> tuple[types.Trajectory, dm_env.TimeStep]:
     trajectory = collections.defaultdict(list)
-    ts = env.reset()  # todo: preserve correct obs and disc for bootstrapping.
+    ts = prev_timestep or env.reset()
     for _ in range(num_steps):
-        assert not np.any(ts.last())
         obs = ts.observation
         action, log_prob = policy(obs)
         ts = env.step(action)
+        reward = _from_none(ts.reward)
+        discount = _from_none(ts.discount)
         trajectory['observations'].append(obs)
         trajectory['actions'].append(action)
-        trajectory['rewards'].append(ts.reward)
-        trajectory['discounts'].append(ts.discount)
+        trajectory['rewards'].append(reward)
+        trajectory['discounts'].append(discount)
         trajectory['log_probs'].append(log_prob)
     trajectory['observations'].append(ts.observation)
 
@@ -64,7 +65,7 @@ def train_loop(env: dm_env.Environment,
     return trajectory, ts
 
 
-def eval_loop(env: dm_env.Environment, policy: ActionLogProbFn) -> np.float:
+def eval_loop(env: dm_env.Environment, policy: ActionLogProbFn) -> float:
     ts = env.reset()
     shape = np.asanyarray(ts.step_type).shape
     cont = np.ones(shape, dtype=bool)
@@ -72,7 +73,11 @@ def eval_loop(env: dm_env.Environment, policy: ActionLogProbFn) -> np.float:
     while cont.any():
         action, _ = policy(ts.observation)
         ts = env.step(action)
-        r = ts.reward
-        reward += cont * np.where(r == None, 0., r).astype(float)
+        reward += cont * _from_none(ts.reward)
         cont *= np.logical_not(ts.last())
     return reward
+
+
+def _from_none(x, fill_value=0., dtype=float):
+    """First dm_env.TimeStep may contain None."""
+    return np.where(x == None, fill_value, x).astype(dtype)

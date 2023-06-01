@@ -21,7 +21,7 @@ def load(random_state: int,
         task,
         random_state=random_state,
         time_limit=time_limit,
-        raise_exception_on_physics_error=False,
+        raise_exception_on_physics_error=True,
         max_reset_attempts=5,
         strip_singleton_obs_buffer_dim=True,
     )

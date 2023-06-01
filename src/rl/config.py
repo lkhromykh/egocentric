@@ -7,7 +7,7 @@ Layers = tuple[int, ...]
 
 @dataclasses.dataclass
 class Config(_Config):
-    gamma: float = .98
+    gamma: float = .97
     lambda_: float = 1.
     entropy_per_dim: float = .1
     num_actions: int = 20
@@ -15,13 +15,14 @@ class Config(_Config):
     # Architecture
     activation: str = 'relu'
     normalization: str = 'rms'
+    asymmetric: bool = True
     mlp_layers: Layers = ()
     cnn_depths: Layers = (48, 48, 48, 48)
     cnn_kernels: Layers = (3, 3, 3, 3)
     cnn_strides: Layers = (2, 2, 2, 2)
     actor_keys: str = r'realsense'
     actor_layers: Layers = (256, 256)
-    critic_keys: str = r'robotiq|box'
+    critic_keys: str = r'robotiq|box|item'
     critic_layers: Layers = (512, 256, 256)
     ensemble_size: int = 1
 
@@ -29,8 +30,8 @@ class Config(_Config):
     jit: bool = True
     buffer_capacity: int = 10 ** 4
     batch_size: int = 16
-    sequence_len: int = 32
-    utd: float = .05
+    sequence_len: int = 16
+    utd: float = .1
     learning_rate: float = 3e-4
     init_temperature: float = 1e-5
     temp_learning_rate: float = 1e-2
@@ -40,7 +41,7 @@ class Config(_Config):
     eval_every: int = 5_000
     train_after: int = 5_000
 
-    logdir: str = 'logdir/src_asymm_discrete_hardreset_dr'
+    logdir: str = 'logdir/src_box_dr'
     task: str = 'src'
     action_space: str = 'discrete'
     num_envs: int = 16
