@@ -9,6 +9,7 @@ from dm_control.composer import variation
 from dm_control.composer.task import Task as _Task
 from dm_control.manipulation.shared import workspaces
 from dm_control.composer.variation import noises, distributions
+from dm_control.utils import transformations
 
 from src.suite import common
 from src.suite import entities
@@ -24,13 +25,15 @@ class DiscreteActions(IntEnum):
     LEFT = 3
     UP = 4
     DOWN = 5
-    OPEN = 6
-    CLOSE = 7
+    ROLL_CW = 6
+    ROLL_CCW = 7
+    CLOSE = 8
+    OPEN = 9
 
     @staticmethod
-    def as_array(action: int) -> common.Array:
+    def as_array(action: int, dtype=np.float32) -> common.Array:
         idx, val = np.divmod(action, 2)
-        ar = np.zeros((4,), dtype=np.float32)
+        ar = np.zeros((5,), dtype=dtype)
         ar[idx] = -1 if val else 1
         return ar
 
@@ -122,9 +125,14 @@ class Task(abc.ABC, _Task):
             action = DiscreteActions.as_array(action)
         else:
             action = np.clip(action, -1, 1)
-        pos, grip = action[:3], action[3]
-        mocap_pos, _ = self._get_mocap(physics)
-        self._set_mocap(physics, mocap_pos + common.CTRL_LIMIT * pos)
+        pos, rot, grip = map(np.squeeze, np.split(action, [3, 4]))
+        mocap_pos, mocap_quat = self._get_mocap(physics)
+        rot = common.ROT_LIMIT * np.array([0, 0, rot])
+        rot = transformations.euler_to_quat(rot)
+        self._set_mocap(physics,
+                        pos=mocap_pos + common.CTRL_LIMIT * pos,
+                        quat=transformations.quat_mul(mocap_quat, rot)
+                        )
         if grip:
             self._gripper.set_grasp(physics, float(grip > 0.))
 
