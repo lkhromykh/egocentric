@@ -22,7 +22,7 @@ class Config(_Config):
     cnn_strides: Layers = (2, 2, 2, 2)
     actor_keys: str = r'realsense'
     actor_layers: Layers = (256, 256)
-    critic_keys: str = r'robotiq|box|item'
+    critic_keys: str = r'.*'
     critic_layers: Layers = (512, 256, 256)
     ensemble_size: int = 1
 
@@ -41,10 +41,10 @@ class Config(_Config):
     eval_every: int = 5_000
     train_after: int = 5_000
 
-    logdir: str = 'logdir/src_box_dr'
+    logdir: str = 'logdir/src_household_rgb'
     task: str = 'src'
     action_space: str = 'discrete'
-    num_envs: int = 16
+    num_envs: int = 8
     seed: int = 0
 
 

@@ -22,14 +22,16 @@ class ReplayBuffer:
             return np.zeros(shape, sp.dtype)
 
         leaves, self._treedef = tree_util.tree_flatten(signature)
+        self._num_leaves = len(leaves)
         self._memory = tree_util.tree_map(from_specs, leaves)
         self._idx = 0
         self._len = 0
 
     def add(self, transition: Nested) -> None:
         leaves, struct = tree_util.tree_flatten(transition)
-        assert struct == self._treedef, 'Structures dont match.'
-        for i in range(len(leaves)):
+        assert struct == self._treedef,\
+            f'Structures dont match: {struct}\n{self._treedef}'
+        for i in range(self._num_leaves):
             self._memory[i][self._idx] = leaves[i]
         self._idx += 1
         self._len = max(self._len, self._idx)

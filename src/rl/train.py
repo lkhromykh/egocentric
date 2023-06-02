@@ -1,9 +1,8 @@
 import os
 import time
-import pickle
 # os.environ['XLA_PYTHON_PREALLOCATE'] = 'false'
 
-
+import cloudpickle
 import numpy as np
 import jax
 import haiku as hk
@@ -32,11 +31,11 @@ def main(cfg: Config):
     nets = builder.make_networks(env)
     params = nets.init(next(rngseq))
     state = builder.make_training_state(next(rngseq), params)
-    if os.path.exists(path := builder.exp_path(Builder.PARAMS)):
-        print('Loading existing params.')
+    if os.path.exists(path := builder.exp_path(Builder.STATE)):
+        print('Loading existing state.')
         with open(path, 'rb') as f:
-            params = pickle.load(f)
-            state.params = jax.device_put(params)
+            state = cloudpickle.load(f)
+            state = jax.device_put(state)
     step = builder.make_step_fn(nets)
     logger = loggers.TFSummaryLogger(cfg.logdir, label='', step_key='step')
     print("Number of params: %d" % hk.data_structures.tree_size(params))
@@ -67,8 +66,8 @@ def main(cfg: Config):
             eval_reward = eval_loop(env, lambda obs: policy(obs, False))
             metrics.update(eval_mean=eval_reward.mean(), eval_std=eval_reward.std())
             ts = env.reset()
-            with open(builder.exp_path(Builder.PARAMS), 'wb') as f:
-                pickle.dump(jax.device_get(state.params), f)
+            with open(builder.exp_path(Builder.STATE), 'wb') as f:
+                cloudpickle.dump(jax.device_get(state), f)
         logger.write(metrics)
 
 

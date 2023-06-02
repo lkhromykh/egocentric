@@ -22,7 +22,7 @@ def load(random_state: int,
         random_state=random_state,
         time_limit=time_limit,
         raise_exception_on_physics_error=True,
-        max_reset_attempts=5,
+        max_reset_attempts=float('inf'),
         strip_singleton_obs_buffer_dim=True,
     )
 

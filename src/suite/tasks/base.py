@@ -187,9 +187,9 @@ class Task(abc.ABC, _Task):
             self._mjcf_variation.bind_attributes(
                 light,
                 pos=noises.Additive(uni(-.2, .2)),
-                diffuse=eq_noise(.4, .7),
+                diffuse=eq_noise(.2, .7),
                 specular=eq_noise(.1, .4),
-                ambient=eq_noise(.2, .5)
+                ambient=eq_noise(.1, .5)
             )
 
         def rgb(init, cur, random_state):
@@ -209,19 +209,15 @@ class Task(abc.ABC, _Task):
             return noise_fn
         self._mjcf_variation.bind_attributes(
             self._camera,
-            pos=axis_var(uni(-.015, .015), 1),
-            quat=axis_var(uni(-.05, .05), 3),
-            fovy=noises.Additive(uni(-15, 15))
+            pos=axis_var(uni(-.01, .01), 1),
+            quat=axis_var(uni(-0.05, 0.05), 3),
+            fovy=noises.Additive(uni(-10, 10))
         )
 
     def _build_observables(self):
         """Enable required observables."""
         def noisy_cam(img, random_state):
-            black = np.uint8([0, 0, 0])
-            mask = random_state.binomial(1, .05, img.shape[:-1])
-            mask = np.expand_dims(mask, -1)
-            img = np.where(mask, black, img)
-            noise = random_state.randint(-15, 15, img.shape)
+            noise = random_state.randint(-25, 25, img.shape)
             img = np.clip(img + noise, 0, 255).astype(img.dtype)
             return img
         self._task_observables['realsense/image'].corruptor = noisy_cam

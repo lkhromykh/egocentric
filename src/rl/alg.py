@@ -49,7 +49,8 @@ def vpi(cfg: Config, nets: Networks) -> StepFn:
         policy_t = nets.actor(params, obs_t)
         log_pi_t = policy_t[:-1].log_prob(a_t)
         entropy_t = policy_t.entropy()
-        tau = jax.nn.softplus(params['~']['temperature']) + 1e-8
+        tau = jnp.maximum(params['~']['temperature'], -18.)
+        tau = jax.nn.softplus(tau) + 1e-8
         pi_a_dash_t, log_pi_dash_t = policy_t.experimental_sample_and_log_prob(
             seed=rng, sample_shape=(cfg.num_actions,))
         obs_tTm1 = tree_slice(obs_t, jnp.s_[:-1])

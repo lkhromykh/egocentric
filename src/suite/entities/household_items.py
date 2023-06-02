@@ -1,29 +1,28 @@
 import os
 import zipfile
-from string import Template
 
 from dm_control import mjcf
 from dm_control import composer
 from dm_control.composer.observation import observable
 
 
-_template = Template("""
+_template = """
 <mujoco model="item">
     <asset>
-        <mesh name="mesh" file="$obj" scale="$scale"/>
-        <texture name="texture" file="$texture" type="2d"/>
+        <mesh name="mesh" file="{obj}" scale="{scale}"/>
+        <texture name="texture" file="{texture}" type="2d"/>
         <material name="mat" texture="texture"/>
     </asset>
 
     <worldbody>
         <body name="item">
             <geom name="item" mesh="mesh" type="mesh" material="mat"
-                  friction="3 0.1 0.002"
+                  friction="3 0.1 0.002" density="800"
             />
         </body>
     </worldbody>
 </mujoco>
-""")
+"""
 
 _BASE_PATH = os.path.abspath(os.path.join(
     os.path.dirname(__file__),
@@ -42,7 +41,7 @@ class HouseholdItem(composer.Entity):
         self._item_name = name
         self._extract(name)
         model_dir = os.path.join(_BASE_PATH, HouseholdItem.CACHE_DIR, name)
-        model = _template.substitute(
+        model = _template.format(
             obj=HouseholdItem.MODEL,
             texture=HouseholdItem.TEXTURE,
             scale=scale

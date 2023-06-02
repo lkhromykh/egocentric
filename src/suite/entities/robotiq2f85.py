@@ -26,6 +26,9 @@ class Robotiq2f85(composer.Entity):
             pos=[0, 0, .1493],
             group=common.MOCAP_SITE_GROUP
         )
+        black = self._mjcf_model.find('material', 'black')
+        for geom in self._mjcf_model.find_all('geom'):
+            geom.material = black
 
     def _build_observables(self):
         return RobotiqObservables(self)

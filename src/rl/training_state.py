@@ -8,7 +8,6 @@ import optax
 
 @jax.tree_util.register_pytree_node_class
 class TrainingState(NamedTuple):
-
     params: hk.Params
     target_params: hk.Params
     opt_state: optax.OptState

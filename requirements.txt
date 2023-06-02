@@ -1,4 +1,5 @@
 chex
+cloudpickle
 dm_control
 dm-haiku
 jax  # See github for CUDA compatible installation.

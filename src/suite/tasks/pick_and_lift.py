@@ -25,12 +25,7 @@ class PickAndLift(base.Task):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._prop = Box(
-            half_lengths=common.BOX_SIZE,
-            mass=common.BOX_MASS,
-        )
-        self._prop.geom.rgba = (1., 0, 0, 1.)
-        # self._prop = entities.HouseholdItem('Ultra_JarroDophilus.zip')
+        self._prop = entities.HouseholdItem('Ultra_JarroDophilus.zip')
         self._prop_placer = None
         self._prop_height = None
         self._arena.add_free_entity(self._prop)
@@ -52,16 +47,10 @@ class PickAndLift(base.Task):
         super().initialize_episode_mjcf(random_state)
         path = entities.HouseholdItem.DATA_DIR
         items = glob.glob(path+'/*.zip')
-        # prop = random_state.choice(items)
+        item = random_state.choice(items)
         self._prop.detach()
-        # self._prop = entities.HouseholdItem(prop)
-        self._prop = Box(
-            half_lengths=common.BOX_SIZE,
-            mass=common.BOX_MASS,
-        )
+        self._prop = entities.HouseholdItem(item)
         self._prop.observables.enable_all()
-        self._prop.geom.rgba = np.concatenate(
-            [random_state.uniform(0, 1, 3), [1.]])
         self._arena.add_free_entity(self._prop)
         self._prop_placer = initializers.PropPlacer(
             props=[self._prop],
@@ -69,8 +58,8 @@ class PickAndLift(base.Task):
             quaternion=workspaces.uniform_z_rotation,
             ignore_collisions=False,
             settle_physics=True,
-            min_settle_physics_time=1.,
-            max_settle_physics_time=1.,
+            min_settle_physics_time=2.,
+            max_settle_physics_time=2.,
         )
 
     def initialize_episode(self, physics, random_state):
