@@ -1,10 +1,12 @@
 import collections.abc
-from typing import TypedDict, Any
+from typing import Any, Callable, TypedDict
 
 import jax
 import jax.numpy as jnp
 
 from dm_env import specs
+
+from src.rl.training_state import TrainingState
 
 RNG = jax.random.PRNGKey
 Array = jnp.ndarray
@@ -25,3 +27,6 @@ class Trajectory(TypedDict, total=False):
     rewards: list[float]
     discounts: list[float]
     log_probs: list[float]
+
+
+StepFn = Callable[[TrainingState, Trajectory], tuple[TrainingState, Metrics]]

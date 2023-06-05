@@ -65,7 +65,7 @@ def train_loop(env: dm_env.Environment,
     return trajectory, ts
 
 
-def eval_loop(env: dm_env.Environment, policy: ActionLogProbFn) -> float:
+def eval_loop(env: dm_env.Environment, policy: ActionLogProbFn) -> np.float64:
     ts = env.reset()
     shape = np.asanyarray(ts.step_type).shape
     cont = np.ones(shape, dtype=bool)

@@ -12,7 +12,7 @@ from src.rl.replay_buffer import ReplayBuffer
 from src.rl.networks import Networks
 from src.rl.config import Config
 from src.rl.training_state import TrainingState
-from src.rl.alg import vpi, StepFn
+from src.rl.alg import vpi
 from src.rl.ops.environment import FromOneHot
 from src.rl import types_ as types
 
@@ -131,7 +131,7 @@ class Builder:
         )
         return ReplayBuffer(rng, self.cfg.buffer_capacity, signature)
 
-    def make_step_fn(self, networks: Networks) -> StepFn:
+    def make_step_fn(self, networks: Networks) -> types.StepFn:
         fn = vpi(self.cfg, networks)
         if self.cfg.jit:
             fn = jax.jit(fn)
