@@ -14,7 +14,7 @@ from src.rl import types_ as types
 from src.rl.config import Config
 
 Array = types.Array
-_w_init = hk.initializers.TruncatedNormal(stddev=1e-3)
+_last_init = hk.initializers.TruncatedNormal(stddev=1e-2)
 
 
 class TanhTransformedDistribution(tfd.TransformedDistribution):
@@ -129,10 +129,10 @@ class Actor(hk.Module):
         state = MLP(self.layers, self.act, self.norm)(state)
         match sp := self.action_spec:
             case specs.DiscreteArray():
-                logits = hk.Linear(sp.num_values, w_init=_w_init)(state)
+                logits = hk.Linear(sp.num_values, w_init=_last_init)(state)
                 dist = tfd.OneHotCategorical(logits)
             case specs.BoundedArray():
-                fc = hk.Linear(2 * sp.shape[0], w_init=_w_init)
+                fc = hk.Linear(2 * sp.shape[0], w_init=_last_init)
                 mean, std = jnp.split(fc(state), 2, -1)
                 std = jax.nn.sigmoid(std) + 1e-3
                 dist = tfd.Normal(mean, std)
@@ -162,7 +162,7 @@ class Critic(hk.Module):
                  ) -> Array:
         x = jnp.concatenate([state, action.astype(state.dtype)], -1)
         x = MLP(self.layers, self.act, self.norm)(x)
-        fc = hk.Linear(1, w_init=_w_init)
+        fc = hk.Linear(1, w_init=_last_init)
         return fc(x)
 
 

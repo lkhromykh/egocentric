@@ -29,11 +29,11 @@ class Config(_Config):
     # Train
     jit: bool = True
     buffer_capacity: int = 10 ** 4
-    batch_size: int = 16
-    sequence_len: int = 16
+    batch_size: int = 32
+    sequence_len: int = 32
     utd: float = .1
     learning_rate: float = 3e-4
-    init_temperature: float = 1e-3
+    init_temperature: float = 1e-1
     temp_learning_rate: float = 1e-2
     polyak_tau: float = 5e-3
     weight_decay: float = 1e-6
@@ -41,7 +41,7 @@ class Config(_Config):
     eval_every: int = 5_000
     train_after: int = 5_000
 
-    logdir: str = 'logdir/src_newmodels'
+    logdir: str = 'logdir/src_newmodels1'
     task: str = 'src'
     action_space: str = 'discrete'
     num_envs: int = 8
