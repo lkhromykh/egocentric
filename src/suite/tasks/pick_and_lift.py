@@ -43,22 +43,25 @@ class PickAndLift(base.Task):
         self._build_observables()
 
     def initialize_episode_mjcf(self, random_state):
-        super().initialize_episode_mjcf(random_state)
-        items = os.listdir(entities.HouseholdItem.DATA_DIR)
-        item = random_state.choice(items)
-        self._prop.detach()
-        self._prop = entities.HouseholdItem(item)
-        self._prop.observables.enable_all()
-        self._arena.add_free_entity(self._prop)
-        self._prop_placer = initializers.PropPlacer(
-            props=[self._prop],
-            position=distributions.Uniform(*self.workspace.prop_box),
-            quaternion=workspaces.uniform_z_rotation,
-            ignore_collisions=False,
-            settle_physics=True,
-            min_settle_physics_time=1.,
-            max_settle_physics_time=1.,
-        )
+        try:
+            super().initialize_episode_mjcf(random_state)
+            items = os.listdir(entities.HouseholdItem.DATA_DIR)
+            item = random_state.choice(items)
+            self._prop.detach()
+            self._prop = entities.HouseholdItem(item)
+            self._prop.observables.enable_all()
+            self._arena.add_free_entity(self._prop)
+            self._prop_placer = initializers.PropPlacer(
+                props=[self._prop],
+                position=distributions.Uniform(*self.workspace.prop_box),
+                quaternion=workspaces.uniform_z_rotation,
+                ignore_collisions=False,
+                settle_physics=True,
+                min_settle_physics_time=1.,
+                max_settle_physics_time=1.,
+            )
+        except Exception as exp:
+            raise EpisodeInitializationError(exp) from exp
 
     def initialize_episode(self, physics, random_state):
         try:
