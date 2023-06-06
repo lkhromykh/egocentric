@@ -1,3 +1,6 @@
 [submodule "src/third_party/mujoco_menagerie"]
 	path = src/third_party/mujoco_menagerie
 	url = https://github.com/deepmind/mujoco_menagerie.git
+[submodule "src/third_party/mujoco_scanned_objects"]
+	path = src/third_party/mujoco_scanned_objects
+	url = https://github.com/kevinzakka/mujoco_scanned_objects.git

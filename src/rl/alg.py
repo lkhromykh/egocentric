@@ -1,5 +1,3 @@
-from typing import Callable
-
 import jax
 import jax.numpy as jnp
 from jax.scipy.special import logsumexp
@@ -10,16 +8,11 @@ import optax
 from src.rl.config import Config
 from src.rl.networks import Networks
 from src.rl.training_state import TrainingState
-from src.rl.ops import retrace
+from src.rl import ops
 from src.rl import types_ as types
 
-StepFn = Callable[
-    [TrainingState, types.Trajectory],
-    tuple[TrainingState, types.Metrics]
-]
 
-
-def vpi(cfg: Config, nets: Networks) -> StepFn:
+def vpi(cfg: Config, nets: Networks) -> types.StepFn:
     sg = jax.lax.stop_gradient
     def tree_slice(t, sl): return jax.tree_util.tree_map(lambda x: x[sl], t)
 
@@ -48,7 +41,6 @@ def vpi(cfg: Config, nets: Networks) -> StepFn:
 
         policy_t = nets.actor(params, obs_t)
         log_pi_t = policy_t[:-1].log_prob(a_t)
-        entropy_t = policy_t.entropy()
         tau = jnp.maximum(params['~']['temperature'], -18.)
         tau = jax.nn.softplus(tau) + 1e-8
         pi_a_dash_t, log_pi_dash_t = policy_t.experimental_sample_and_log_prob(
@@ -62,24 +54,26 @@ def vpi(cfg: Config, nets: Networks) -> StepFn:
             lambda x: x.min(-1),  # pessimistic critics ensembling
             (target_q_t, target_q_dash_t)
         )
-        v_t = target_q_dash_t.mean(0) + sg(tau) * entropy_t
+        v_t = target_q_dash_t.mean(0)
 
         in_axes = 5 * (1,) + (None,)
-        resids_fn = jax.vmap(retrace, in_axes, out_axes=1)
+        target_fn = jax.vmap(ops.retrace, in_axes, out_axes=1)
         log_rho_t = log_pi_t - log_mu_t
         disc_t *= cfg.gamma
-        resid_t = resids_fn(target_q_t, v_t[1:], r_t, disc_t,
-                            log_rho_t, cfg.lambda_)
-        target_q_t = jnp.expand_dims(target_q_t + resid_t, -1)
+        target_q_t = target_fn(target_q_t, v_t[1:], r_t, disc_t,
+                               log_rho_t, cfg.lambda_)
+        target_q_t = jnp.expand_dims(target_q_t, -1)
         critic_loss = jnp.square(q_t - sg(target_q_t)).mean()
 
         act_dim = a_t.shape[-1]
         match cfg.action_space:
             case 'continuous':
-                actor_loss = -v_t
+                entropy_t = -log_pi_dash_t.mean(0)
+                actor_loss = -v_t - sg(tau) * entropy_t
                 target_entropy = (cfg.entropy_per_dim - 1.) * act_dim
                 temp_loss = tau * sg(entropy_t - target_entropy)
             case 'discrete':
+                entropy_t = policy_t.entropy()
                 target_entropy = cfg.entropy_per_dim * jnp.log(act_dim)
                 actor_loss, temp_loss = cross_entropy(
                     target_q_dash_t, log_pi_dash_t, tau, target_entropy)

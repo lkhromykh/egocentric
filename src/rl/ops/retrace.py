@@ -35,7 +35,7 @@ def retrace2(q_t: chex.Array,
              ) -> chex.Array:
     """Equivalent estimation from the 1611.01224."""
     rho_t = lambda_ * jnp.minimum(1, jnp.exp(log_rho_t))
-    q_tp1 = jnp.concatenate([q_t[1:], jnp.zeros_like(q_t[:1])])
+    q_tp1 = jnp.roll(q_t, -1)
     xs = (q_tp1, v_tp1, r_t, disc_t, rho_t)
     chex.assert_rank(xs, 1)
     chex.assert_equal_shape(xs)

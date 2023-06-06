@@ -186,15 +186,14 @@ class Task(abc.ABC, _Task):
         for light in self.root_entity.mjcf_model.worldbody.find_all('light'):
             self._mjcf_variation.bind_attributes(
                 light,
-                pos=noises.Additive(uni(-.2, .2)),
-                diffuse=eq_noise(.2, .7),
-                specular=eq_noise(.1, .4),
-                ambient=eq_noise(.1, .5)
+                pos=noises.Additive(uni(-.4, .4)),
+                diffuse=eq_noise(0., .7),
+                specular=eq_noise(0., .7),
+                ambient=eq_noise(0., .7)
             )
 
         def rgb(init, cur, random_state):
-            noise = random_state.uniform(.3, 1.)
-            noise = np.repeat(noise, len(init) - 1)
+            noise = random_state.uniform(0., 1., len(init) - 1)
             return np.concatenate([noise, [1.]])
         self._mjcf_variation.bind_attributes(
             self._arena.groundplane_material,
@@ -211,7 +210,7 @@ class Task(abc.ABC, _Task):
             self._camera,
             pos=axis_var(uni(-.01, .01), 1),
             quat=axis_var(uni(-0.05, 0.05), 3),
-            fovy=noises.Additive(uni(-10, 10))
+            fovy=noises.Additive(uni(-12, 12))
         )
 
     def _build_observables(self):

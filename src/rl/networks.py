@@ -7,12 +7,25 @@ import numpy as np
 import jax
 import jax.numpy as jnp
 import haiku as hk
-import tensorflow_probability.substrates.jax.distributions as tfd
+import tensorflow_probability.substrates.jax as tfp
+tfd = tfp.distributions
 
 from src.rl import types_ as types
 from src.rl.config import Config
 
 Array = types.Array
+_w_init = hk.initializers.TruncatedNormal(stddev=1e-3)
+
+
+class TanhTransformedDistribution(tfd.TransformedDistribution):
+
+    def log_prob(self, event):
+        threshold = .999
+        event = jnp.clip(event, -threshold, threshold)
+        return super().log_prob(event)
+
+    def mode(self):
+        return self.bijector.forward(self.distribution.mode())
 
 
 class MLP(hk.Module):
@@ -75,21 +88,25 @@ class Encoder(hk.Module):
         if cnn_feat:
             cnn_feat = concat(cnn_feat)
             emb.append(self._cnn(cnn_feat))
-        return concat(emb)
+
+        emb = concat(emb)
+        emb = _get_norm('layer')(emb)
+        return jax.lax.tanh(emb)
 
     def _mlp(self, x):
-        return MLP(self.mlp_layers, self.act, self.norm)(x)
+        mlp = MLP(self.mlp_layers, self.act, self.norm, activate_final=False)
+        return mlp(x)
 
     def _cnn(self, x):
         x /= 255.
         prefix = x.shape[:-3]
         x = jnp.reshape(x, (np.prod(prefix, dtype=int),) + x.shape[-3:])
-
-        cnn_arch = zip(self.cnn_depths, self.cnn_kernels, self.cnn_strides)
-        for depth, kernel, stride in cnn_arch:
+        cnn = tuple(zip(self.cnn_depths, self.cnn_kernels, self.cnn_strides))
+        for i, (depth, kernel, stride) in enumerate(cnn):
             x = hk.Conv2D(depth, kernel, stride, padding='VALID')(x)
-            x = _get_norm(self.norm)(x)
-            x = _get_act(self.act)(x)
+            if i != len(cnn) - 1:
+                x = _get_norm(self.norm)(x)
+                x = _get_act(self.act)(x)
         return jnp.reshape(x, prefix + (-1,))
 
 
@@ -110,17 +127,16 @@ class Actor(hk.Module):
 
     def __call__(self, state: Array) -> tfd.Distribution:
         state = MLP(self.layers, self.act, self.norm)(state)
-        w_init = jnp.zeros
         match sp := self.action_spec:
             case specs.DiscreteArray():
-                logits = hk.Linear(sp.num_values, w_init=w_init)(state)
+                logits = hk.Linear(sp.num_values, w_init=_w_init)(state)
                 dist = tfd.OneHotCategorical(logits)
             case specs.BoundedArray():
-                fc = hk.Linear(2 * sp.shape[0], w_init=w_init)
+                fc = hk.Linear(2 * sp.shape[0], w_init=_w_init)
                 mean, std = jnp.split(fc(state), 2, -1)
-                mean = jnp.tanh(mean)
                 std = jax.nn.sigmoid(std) + 1e-3
                 dist = tfd.Normal(mean, std)
+                dist = TanhTransformedDistribution(dist, tfp.bijectors.Tanh())
                 dist = tfd.Independent(dist, 1)
             case _:
                 raise ValueError(sp)
@@ -146,7 +162,7 @@ class Critic(hk.Module):
                  ) -> Array:
         x = jnp.concatenate([state, action.astype(state.dtype)], -1)
         x = MLP(self.layers, self.act, self.norm)(x)
-        fc = hk.Linear(1, w_init=jnp.zeros)
+        fc = hk.Linear(1, w_init=_w_init)
         return fc(x)
 
 
@@ -249,7 +265,7 @@ class Networks(NamedTuple):
 
             def init():
                 dist = actor(dummy_obs)
-                critic(dummy_obs, dist.mode())
+                critic(dummy_obs, dist.sample(seed=jax.random.PRNGKey(0)))
                 init_temp = jnp.log(jnp.exp(cfg.init_temperature) - 1)
                 hk.get_parameter('temperature',
                                  (),
@@ -281,13 +297,13 @@ def _get_norm(norm: str) -> Callable[[Array], Array]:
         case 'layer':
             return hk.LayerNorm(
                 axis=-1,
-                create_scale=False,
-                create_offset=False
+                create_scale=True,
+                create_offset=True
             )
         case 'rms':
             return hk.RMSNorm(
                 axis=-1,
-                create_scale=False
+                create_scale=True
             )
         case _:
             raise ValueError(norm)

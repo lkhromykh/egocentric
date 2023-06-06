@@ -14,16 +14,16 @@ class Config(_Config):
 
     # Architecture
     activation: str = 'relu'
-    normalization: str = 'rms'
+    normalization: str = 'none'
     asymmetric: bool = True
-    mlp_layers: Layers = ()
+    mlp_layers: Layers = (256,)
     cnn_depths: Layers = (48, 48, 48, 48)
     cnn_kernels: Layers = (3, 3, 3, 3)
     cnn_strides: Layers = (2, 2, 2, 2)
     actor_keys: str = r'realsense'
     actor_layers: Layers = (256, 256)
     critic_keys: str = r'.*'
-    critic_layers: Layers = (512, 256, 256)
+    critic_layers: Layers = (256, 256)
     ensemble_size: int = 1
 
     # Train
@@ -33,7 +33,7 @@ class Config(_Config):
     sequence_len: int = 16
     utd: float = .1
     learning_rate: float = 3e-4
-    init_temperature: float = 1e-5
+    init_temperature: float = 1e-3
     temp_learning_rate: float = 1e-2
     polyak_tau: float = 5e-3
     weight_decay: float = 1e-6
@@ -41,7 +41,7 @@ class Config(_Config):
     eval_every: int = 5_000
     train_after: int = 5_000
 
-    logdir: str = 'logdir/src_household_rgb'
+    logdir: str = 'logdir/src_newmodels'
     task: str = 'src'
     action_space: str = 'discrete'
     num_envs: int = 8

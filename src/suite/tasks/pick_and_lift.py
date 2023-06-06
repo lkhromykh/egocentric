@@ -1,6 +1,5 @@
-import glob
+import os
 
-import numpy as np
 from dm_control.composer import initializers
 from dm_control.composer.observation import observable
 from dm_control.composer.environment import EpisodeInitializationError
@@ -25,7 +24,7 @@ class PickAndLift(base.Task):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._prop = entities.HouseholdItem('Ultra_JarroDophilus.zip')
+        self._prop = entities.HouseholdItem('Ultra_JarroDophilus')
         self._prop_placer = None
         self._prop_height = None
         self._arena.add_free_entity(self._prop)
@@ -45,8 +44,7 @@ class PickAndLift(base.Task):
 
     def initialize_episode_mjcf(self, random_state):
         super().initialize_episode_mjcf(random_state)
-        path = entities.HouseholdItem.DATA_DIR
-        items = glob.glob(path+'/*.zip')
+        items = os.listdir(entities.HouseholdItem.DATA_DIR)
         item = random_state.choice(items)
         self._prop.detach()
         self._prop = entities.HouseholdItem(item)
@@ -58,8 +56,8 @@ class PickAndLift(base.Task):
             quaternion=workspaces.uniform_z_rotation,
             ignore_collisions=False,
             settle_physics=True,
-            min_settle_physics_time=2.,
-            max_settle_physics_time=2.,
+            min_settle_physics_time=1.,
+            max_settle_physics_time=1.,
         )
 
     def initialize_episode(self, physics, random_state):
@@ -69,6 +67,7 @@ class PickAndLift(base.Task):
             super().initialize_episode(physics, random_state)
             pos, _ = self._prop.get_pose(physics)
             self._prop_height = pos[2]
+            physics.forward()
         except Exception as exp:
             raise EpisodeInitializationError(exp) from exp
 
@@ -90,7 +89,8 @@ class PickAndLift(base.Task):
             tcp_pos = physics.bind(self._gripper.tool_center_point).xpos
             obj_pos, _ = self._prop.get_pose(physics)
             return obj_pos - tcp_pos
-        self._task_observables['item/distance'] = observable.Generic(distance)
+        self._task_observables[f'{self._prop.mjcf_model.model}/distance'] =\
+            observable.Generic(distance)
         for obs in self._task_observables.values():
             obs.enabled = True
         self._gripper.observables.enable_all()
