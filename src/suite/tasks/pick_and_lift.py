@@ -72,7 +72,7 @@ class PickAndLift(base.Task):
             self._prop_height = pos[2]
             physics.forward()
         except Exception as exp:
-            raise EpisodeInitializationError(exp) from exp
+            raise EpisodeInitializationError(self._prop.item_name) from exp
 
     def get_reward(self, physics):
         pos, _ = self._prop.get_pose(physics)
