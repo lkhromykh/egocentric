@@ -17,7 +17,7 @@ class Config(_Config):
     normalization: str = 'none'
     asymmetric: bool = True
     mlp_layers: Layers = (256,)
-    cnn_depths: Layers = (48, 48, 48, 48)
+    cnn_depths: Layers = (32, 32, 32, 32)
     cnn_kernels: Layers = (3, 3, 3, 3)
     cnn_strides: Layers = (2, 2, 2, 2)
     actor_keys: str = r'realsense'
@@ -28,9 +28,9 @@ class Config(_Config):
 
     # Train
     jit: bool = True
-    buffer_capacity: int = 10 ** 4
+    buffer_capacity: int = 10 ** 5
     batch_size: int = 32
-    sequence_len: int = 32
+    sequence_len: int = 16
     utd: float = .1
     learning_rate: float = 3e-4
     init_temperature: float = 1e-1
@@ -41,7 +41,7 @@ class Config(_Config):
     eval_every: int = 5_000
     train_after: int = 5_000
 
-    logdir: str = 'logdir/src_newmodels1'
+    logdir: str = 'logdir/src_newmodels'
     task: str = 'src'
     action_space: str = 'discrete'
     num_envs: int = 8

@@ -130,7 +130,7 @@ class Actor(hk.Module):
         match sp := self.action_spec:
             case specs.DiscreteArray():
                 logits = hk.Linear(sp.num_values, w_init=_last_init)(state)
-                dist = tfd.OneHotCategorical(logits)
+                dist = tfd.OneHotCategorical(logits=logits, dtype=jnp.int32)
             case specs.BoundedArray():
                 fc = hk.Linear(2 * sp.shape[0], w_init=_last_init)
                 mean, std = jnp.split(fc(state), 2, -1)

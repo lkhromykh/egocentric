@@ -6,8 +6,8 @@ import cloudpickle
 import numpy as np
 import jax
 import haiku as hk
-import chex
-chex.disable_asserts()
+# import chex
+# chex.disable_asserts()
 # jax.config.update('jax_platform_name', 'cpu')
 
 from rltools import loggers
@@ -58,6 +58,8 @@ def main(cfg: Config):
         if interactions < cfg.train_after:
             continue
         batch = next(ds)
+        act = batch['actions'].argmax(-1)
+        print(act.mean(), act.std())
         state, metrics = step(state, batch)
         fps = interactions / (time.time() - start)
         metrics.update(step=interactions, fps=fps)

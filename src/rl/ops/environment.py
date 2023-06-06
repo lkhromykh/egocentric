@@ -21,9 +21,8 @@ class FromOneHot(Wrapper):
         super().__init__(env)
         act_spec = env.action_spec()
         self._is_discrete = isinstance(act_spec, dm_env.specs.DiscreteArray)
-        if not self._is_discrete:
-            act_spec = act_spec.replace(dtype=np.float32)
-        self._act_spec = act_spec
+        dtype = np.int32 if self._is_discrete else np.float32
+        self._act_spec = act_spec.replace(dtype=dtype)
 
     def reset(self) -> dm_env.TimeStep:
         return self.env.reset()
