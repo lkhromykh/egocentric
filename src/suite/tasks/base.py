@@ -216,7 +216,7 @@ class Task(abc.ABC, _Task):
     def _build_observables(self):
         """Enable required observables."""
         def noisy_cam(img, random_state):
-            noise = random_state.randint(-25, 25, img.shape)
+            noise = random_state.randint(-20, 20, img.shape)
             img = np.clip(img + noise, 0, 255).astype(img.dtype)
             return img
         self._task_observables['realsense/image'].corruptor = noisy_cam

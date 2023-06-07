@@ -17,18 +17,18 @@ class Config(_Config):
     normalization: str = 'none'
     asymmetric: bool = True
     mlp_layers: Layers = (256,)
-    cnn_depths: Layers = (32, 32, 32, 32)
+    cnn_depths: Layers = (64, 64, 64, 64)
     cnn_kernels: Layers = (3, 3, 3, 3)
     cnn_strides: Layers = (2, 2, 2, 2)
-    actor_keys: str = r'realsense'
+    actor_keys: str = r'robotiq|model|box|item'
     actor_layers: Layers = (256, 256)
-    critic_keys: str = r'.*'
+    critic_keys: str = r'robotiq|model|box|item'
     critic_layers: Layers = (256, 256)
     ensemble_size: int = 1
 
     # Train
     jit: bool = True
-    buffer_capacity: int = 10 ** 5
+    buffer_capacity: int = 10 ** 4
     batch_size: int = 32
     sequence_len: int = 16
     utd: float = .1
@@ -41,10 +41,10 @@ class Config(_Config):
     eval_every: int = 5_000
     train_after: int = 5_000
 
-    logdir: str = 'logdir/src_newmodels'
+    logdir: str = 'logdir/src_box_lowdim'
     task: str = 'src'
     action_space: str = 'discrete'
-    num_envs: int = 8
+    num_envs: int = 2
     seed: int = 0
 
 

@@ -25,7 +25,11 @@ class PickAndLift(base.Task):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._prop = entities.HouseholdItem('Ultra_JarroDophilus')
-        self._prop_placer = None
+        self._prop = Box(
+            half_lengths=common.BOX_SIZE,
+            mass=common.BOX_MASS,
+        )
+        self._prop.geom.rgba = '1 0 0 1'
         self._prop_height = None
         self._arena.add_free_entity(self._prop)
         lower = self.workspace.tcp_box.lower.copy()
@@ -49,9 +53,20 @@ class PickAndLift(base.Task):
             item = random_state.choice(items)
             self._prop.detach()
             self._prop = entities.HouseholdItem(item)
+            self._prop = Box(
+                half_lengths=common.BOX_SIZE,
+                mass=common.BOX_MASS,
+            )
+            self._prop.geom.rgba = '1 0 0 1'
             self._prop.observables.enable_all()
             self._arena.add_free_entity(self._prop)
-            self._prop_placer = initializers.PropPlacer(
+        except Exception as exp:
+            raise EpisodeInitializationError(exp) from exp
+
+    def initialize_episode(self, physics, random_state):
+        try:
+            self._gripper.set_pose(physics, self.workspace.tcp_box.upper)
+            prop_placer = initializers.PropPlacer(
                 props=[self._prop],
                 position=distributions.Uniform(*self.workspace.prop_box),
                 quaternion=workspaces.uniform_z_rotation,
@@ -60,13 +75,7 @@ class PickAndLift(base.Task):
                 min_settle_physics_time=1.,
                 max_settle_physics_time=1.,
             )
-        except Exception as exp:
-            raise EpisodeInitializationError(exp) from exp
-
-    def initialize_episode(self, physics, random_state):
-        try:
-            self._gripper.set_pose(physics, self.workspace.tcp_box.upper)
-            self._prop_placer(physics, random_state)
+            prop_placer(physics, random_state)
             super().initialize_episode(physics, random_state)
             pos, _ = self._prop.get_pose(physics)
             self._prop_height = pos[2]

@@ -1,6 +1,7 @@
 import os
 from typing import Callable
 
+import cloudpickle
 import dm_env.specs
 import numpy as np
 import jax
@@ -52,7 +53,7 @@ class Builder:
                         action_mode=c.action_space,
                         img_size=(128, 128),
                         control_timestep=.05,
-                        time_limit=3.5,
+                        time_limit=6.,
                     ))
             case 'ur', _:
                 from ur_env.remote import RemoteEnvClient
@@ -82,6 +83,11 @@ class Builder:
                             rng: types.RNG,
                             params: hk.Params,
                             ) -> TrainingState:
+        if os.path.exists(path := self.exp_path(Builder.STATE)):
+            print('Loading existing state.')
+            with open(path, 'rb') as f:
+                state = cloudpickle.load(f)
+            return jax.device_put(state)
         c = self.cfg
         optim = optax.adamw(c.learning_rate, weight_decay=c.weight_decay)
         optim = optax.chain(optax.clip_by_global_norm(c.max_grad), optim)
