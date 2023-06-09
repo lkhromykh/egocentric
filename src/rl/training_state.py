@@ -13,7 +13,6 @@ class TrainingState(NamedTuple):
     opt_state: optax.OptState
     rng: jax.random.PRNGKey
     step: jnp.ndarray
-
     tx: optax.TransformUpdateFn
     target_update_var: float
 
