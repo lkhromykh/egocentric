@@ -52,7 +52,7 @@ class Builder:
                         seed,
                         action_mode=c.action_space,
                         img_size=(128, 128),
-                        control_timestep=.05,
+                        control_timestep=.1,
                         time_limit=6.,
                     ))
             case 'ur', _:

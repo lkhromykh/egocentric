@@ -1,5 +1,6 @@
 import os
 
+import numpy as np
 from dm_control.composer import initializers
 from dm_control.composer.observation import observable
 from dm_control.composer.environment import EpisodeInitializationError
@@ -20,7 +21,7 @@ class Box(entities.BoxWithVertexSites):
 
 class PickAndLift(base.Task):
 
-    MARGIN: float = .2
+    MARGIN: float = .15
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -57,7 +58,8 @@ class PickAndLift(base.Task):
                 half_lengths=common.BOX_SIZE,
                 mass=common.BOX_MASS,
             )
-            self._prop.geom.rgba = '1 0 0 1'
+            rgba = np.concatenate([random_state.uniform(0, 1., 3), [1]])
+            self._prop.geom.rgba = rgba
             self._prop.observables.enable_all()
             self._arena.add_free_entity(self._prop)
         except Exception as exp:
@@ -78,8 +80,8 @@ class PickAndLift(base.Task):
             prop_placer(physics, random_state)
             super().initialize_episode(physics, random_state)
             pos, _ = self._prop.get_pose(physics)
-            self._prop_height = pos[2]
             physics.forward()
+            self._prop_height = pos[2]
         except Exception as exp:
             raise EpisodeInitializationError(self._prop.item_name) from exp
 
@@ -105,5 +107,6 @@ class PickAndLift(base.Task):
             observable.Generic(distance)
         for obs in self._task_observables.values():
             obs.enabled = True
+        self._task_observables['realsense/image'].enabled = False
         self._gripper.observables.enable_all()
         self._prop.observables.enable_all()

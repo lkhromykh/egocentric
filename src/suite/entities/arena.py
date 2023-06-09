@@ -53,8 +53,8 @@ class Arena(Entity):
             diffuse=(.6, .6, .6),
             specular=(.3, .3, .3),
             ambient=(.4, .4, .4),
-            directional='true',
-            castshadow='false'
+            directional=True,
+            castshadow=False
         )
         self._hall_light = self._mjcf_root.worldbody.add(
             'light',
@@ -64,8 +64,8 @@ class Arena(Entity):
             diffuse=(.2, .2, .2),
             specular=(.2, .2, .2),
             ambient=(.1, .1, .1),
-            directional='true',
-            castshadow='false'
+            directional=True,
+            castshadow=False
         )
 
     def add_free_entity(self, entity, offset=None):

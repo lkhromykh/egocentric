@@ -17,11 +17,16 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
     def tree_slice(t, sl): return jax.tree_util.tree_map(lambda x: x[sl], t)
 
     def cross_entropy(q_values, log_probs, temperature, target_entropy):
-        tempered_q_values = sg(q_values) / temperature
-        normalized_weights = jax.nn.softmax(tempered_q_values, axis=0)
+        adv = q_values - q_values.mean(0)
+        tempered_q_values = sg(adv) / temperature
+        clipped_tempered_q_values = jnp.clip(tempered_q_values, -1., 1.)
+        normalized_weights = jax.nn.softmax(clipped_tempered_q_values, axis=0)
         normalized_weights = sg(normalized_weights)
         cross_entropy_loss = -jnp.sum(normalized_weights * log_probs, axis=0)
-        temp_loss = logsumexp(tempered_q_values, 0) - target_entropy
+
+        log_num_actions = jnp.log(cfg.num_actions)
+        lse = logsumexp(tempered_q_values, 0)
+        temp_loss = lse - log_num_actions - target_entropy
         temp_loss *= temperature
         return cross_entropy_loss, temp_loss
 
@@ -38,7 +43,6 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
         # time major arrays are expected [TIME, BATCH, ...].
         chex.assert_tree_shape_prefix(obs_t, (cfg.sequence_len + 1, cfg.batch_size))
         chex.assert_tree_shape_prefix(a_t, (cfg.sequence_len, cfg.batch_size))
-
         policy_t = nets.actor(params, obs_t)
         log_pi_t = policy_t[:-1].log_prob(a_t)
         tau = jnp.maximum(params['~']['temperature'], -18.)
@@ -50,26 +54,26 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
         target_q_t = nets.critic(target_params, obs_tTm1, a_t)
         target_q_dash_t = jax.vmap(nets.critic, in_axes=(None, None, 0)
                                    )(target_params, obs_t, pi_a_dash_t)
-        target_q_t, target_q_dash_t = map(
-            lambda x: x.min(-1),  # pessimistic critics ensembling
-            (target_q_t, target_q_dash_t)
-        )
         v_t = target_q_dash_t.mean(0)
 
-        in_axes = 5 * (1,) + (None,)
+        in_axes = 5 * (1,) + (None,)  # vec batch_dim
         target_fn = jax.vmap(ops.retrace, in_axes, out_axes=1)
+        in_axes = 2 * (-1,) + 4 * (None,)  # vec qs ensemble
+        target_fn = jax.vmap(target_fn, in_axes, out_axes=-1)
+
         log_rho_t = log_pi_t - log_mu_t
         disc_t *= cfg.gamma
         target_q_t = target_fn(target_q_t, v_t[1:], r_t, disc_t,
                                log_rho_t, cfg.lambda_)
-        target_q_t = jnp.expand_dims(target_q_t, -1)
+        target_q_t = target_q_t.min(-1, keepdims=True)
         critic_loss = jnp.square(q_t - sg(target_q_t)).mean()
 
         act_dim = a_t.shape[-1]
+        target_q_dash_t = target_q_dash_t.mean(-1)
         match cfg.action_space:
             case 'continuous':
                 entropy_t = -log_pi_dash_t.mean(0)
-                actor_loss = -v_t - sg(tau) * entropy_t
+                actor_loss = -target_q_dash_t.mean(0) - sg(tau) * entropy_t
                 target_entropy = (cfg.entropy_per_dim - 1.) * act_dim
                 temp_loss = tau * sg(entropy_t - target_entropy)
             case 'discrete':
@@ -109,9 +113,9 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
             ('observations', 'actions', 'rewards', 'discounts', 'log_probs')
         )
         grad_fn = jax.grad(loss_fn, has_aux=True)
-        grads, metrics = grad_fn(params, target_params, subkey, *args)
-        metrics.update(grad_norm=optax.global_norm(grads))
-        state = state.update(grads)
+        grad, metrics = grad_fn(params, target_params, subkey, *args)
+        metrics.update(grad_norm=optax.global_norm(grad))
+        state = state.update(grad)
         return state.replace(rng=rng), metrics
 
     @chex.assert_max_traces(1)

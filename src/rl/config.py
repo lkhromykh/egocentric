@@ -10,11 +10,11 @@ class Config(_Config):
     gamma: float = .97
     lambda_: float = 1.
     entropy_per_dim: float = .1
-    num_actions: int = 20
+    num_actions: int = 32
 
     # Architecture
-    activation: str = 'relu'
-    normalization: str = 'none'
+    activation: str = 'elu'
+    normalization: str = 'layer'
     asymmetric: bool = True
     mlp_layers: Layers = (256,)
     cnn_depths: Layers = (64, 64, 64, 64)
@@ -28,20 +28,20 @@ class Config(_Config):
 
     # Train
     jit: bool = True
-    buffer_capacity: int = 10 ** 4
-    batch_size: int = 32
-    sequence_len: int = 16
-    utd: float = .1
+    buffer_capacity: int = 10 ** 5
+    batch_size: int = 128
+    sequence_len: int = 4
+    utd: float = 1.
     learning_rate: float = 3e-4
-    init_temperature: float = 1e-1
+    init_temperature: float = 1e-3
     temp_learning_rate: float = 1e-2
     polyak_tau: float = 5e-3
     weight_decay: float = 1e-6
-    max_grad: float = 50.
-    eval_every: int = 5_000
-    train_after: int = 5_000
+    max_grad: float = 10.
+    eval_every: int = 10_000
+    train_after: int = 10_000
 
-    logdir: str = 'logdir/src_box_lowdim'
+    logdir: str = 'logdir/src_box_discrete4step_entreglse'
     task: str = 'src'
     action_space: str = 'discrete'
     num_envs: int = 2

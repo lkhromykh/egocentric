@@ -187,9 +187,9 @@ class Task(abc.ABC, _Task):
             self._mjcf_variation.bind_attributes(
                 light,
                 pos=noises.Additive(uni(-.4, .4)),
-                diffuse=eq_noise(0., .7),
-                specular=eq_noise(0., .7),
-                ambient=eq_noise(0., .7)
+                diffuse=eq_noise(.1, .7),
+                specular=eq_noise(.05, .3),
+                ambient=eq_noise(.05, .4)
             )
 
         def rgb(init, cur, random_state):
