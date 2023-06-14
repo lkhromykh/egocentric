@@ -134,6 +134,7 @@ class Actor(hk.Module):
             case specs.BoundedArray():
                 fc = hk.Linear(2 * sp.shape[0], w_init=_last_w_init)
                 mean, std = jnp.split(fc(state), 2, -1)
+                std = jnp.clip(std, -12, 12)
                 std = jax.nn.sigmoid(std) + 1e-3
                 dist = tfd.Normal(mean, std)
                 dist = TransformedDistribution(dist, tfp.bijectors.Tanh())
@@ -222,12 +223,12 @@ class Networks(NamedTuple):
 
             def actor(obs):
                 if cfg.asymmetric:
-                    name = 'actor_encoder'
                     keys = cfg.actor_keys
+                    name = 'actor_encoder'
                     sg = lambda x: x
                 else:
-                    name = 'critic_encoder'
                     keys = cfg.critic_keys
+                    name = 'critic_encoder'
                     sg = jax.lax.stop_gradient
                 state = encoder(keys, name)(obs)
                 state = sg(state)

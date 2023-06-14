@@ -16,9 +16,7 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
     def tree_slice(t, sl): return jax.tree_util.tree_map(lambda x: x[sl], t)
 
     def cross_entropy(q_values, log_probs, temperature):
-        adv = q_values - q_values.mean(0)
-        tempered_q_values = adv /temperature
-        # tempered_q_values = jnp.clip(adv / temperature, -1, 1)
+        tempered_q_values = q_values / temperature
         normalized_weights = jax.nn.softmax(tempered_q_values, axis=0)
         normalized_weights = sg(normalized_weights)
         return -jnp.sum(normalized_weights * log_probs, axis=0)
@@ -82,14 +80,14 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
 
         target_q_dash_t = target_q_dash_t.mean(-1)
         match cfg.action_space:
-            case 'continuous':
-                entropy_t = -log_pi_dash_t.mean(0)
-                target_entropy = (cfg.entropy_per_dim - 1.) * act_dim
-                actor_loss = -target_q_dash_t.mean(0) - sg(tau) * entropy_t
             case 'discrete':
                 entropy_t = policy_t.entropy()
                 target_entropy = cfg.entropy_per_dim * jnp.log(act_dim)
                 actor_loss = cross_entropy(target_q_dash_t, log_pi_dash_t, tau)
+            case 'continuous':
+                entropy_t = -log_pi_dash_t.mean(0)
+                target_entropy = (cfg.entropy_per_dim - 1.) * act_dim
+                actor_loss = -target_q_dash_t.mean(0) - sg(tau) * entropy_t
         actor_loss = jnp.mean(actor_loss)
         temp_loss = tau * sg(entropy_t.mean() - target_entropy)
 

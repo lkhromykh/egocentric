@@ -9,31 +9,31 @@ Layers = tuple[int, ...]
 class Config(_Config):
     gamma: float = .97
     lambda_: float = 1.
-    entropy_per_dim: float = .1
-    num_actions: int = 32
+    entropy_per_dim: float = .2
+    num_actions: int = 20
 
     # Architecture
     activation: str = 'elu'
     normalization: str = 'layer'
     asymmetric: bool = True
-    mlp_layers: Layers = (256,)
+    mlp_layers: Layers = (512,)
     cnn_depths: Layers = (64, 64, 64, 64)
     cnn_kernels: Layers = (3, 3, 3, 3)
     cnn_strides: Layers = (2, 2, 2, 2)
-    actor_keys: str = r'robotiq|model|box|item'
-    actor_layers: Layers = (256, 256)
+    actor_keys: str = r'realsense'
+    actor_layers: Layers = (512, 512)
     critic_keys: str = r'robotiq|model|box|item'
-    critic_layers: Layers = (256, 256)
-    ensemble_size: int = 1
+    critic_layers: Layers = (512, 512)
+    ensemble_size: int = 2
 
     # Train
     jit: bool = True
     buffer_capacity: int = 10 ** 5
-    batch_size: int = 512
-    sequence_len: int = 1
-    utd: float = 1.
+    batch_size: int = 256
+    sequence_len: int = 2
+    utd: float = .5
     learning_rate: float = 3e-4
-    init_temperature: float = .1
+    init_temperature: float = 1e-3
     temp_learning_rate: float = 1e-2
     polyak_tau: float = 5e-3
     weight_decay: float = 1e-6
@@ -41,10 +41,10 @@ class Config(_Config):
     eval_every: int = 10_000
     train_after: int = 10_000
 
-    logdir: str = 'logdir/src_box_nosampling6'
+    logdir: str = 'logdir/src_box_img'
     task: str = 'src'
     action_space: str = 'discrete'
-    num_envs: int = 2
+    num_envs: int = 8
     seed: int = 0
 
 

@@ -25,12 +25,11 @@ class PickAndLift(base.Task):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._prop = entities.HouseholdItem('Ultra_JarroDophilus')
+        # self._prop = entities.HouseholdItem('Ultra_JarroDophilus')
         self._prop = Box(
             half_lengths=common.BOX_SIZE,
             mass=common.BOX_MASS,
         )
-        self._prop.geom.rgba = '1 0 0 1'
         self._prop_height = None
         self._arena.add_free_entity(self._prop)
         lower = self.workspace.tcp_box.lower.copy()
@@ -50,10 +49,10 @@ class PickAndLift(base.Task):
     def initialize_episode_mjcf(self, random_state):
         try:
             super().initialize_episode_mjcf(random_state)
-            items = os.listdir(entities.HouseholdItem.DATA_DIR)
-            item = random_state.choice(items)
+            # items = os.listdir(entities.HouseholdItem.DATA_DIR)
+            # item = random_state.choice(items)
             self._prop.detach()
-            self._prop = entities.HouseholdItem(item)
+            # self._prop = entities.HouseholdItem(item)
             self._prop = Box(
                 half_lengths=common.BOX_SIZE,
                 mass=common.BOX_MASS,
@@ -71,11 +70,9 @@ class PickAndLift(base.Task):
             prop_placer = initializers.PropPlacer(
                 props=[self._prop],
                 position=distributions.Uniform(*self.workspace.prop_box),
-                quaternion=workspaces.uniform_z_rotation,
+                # quaternion=workspaces.uniform_z_rotation,
                 ignore_collisions=False,
                 settle_physics=True,
-                min_settle_physics_time=1.,
-                max_settle_physics_time=1.,
             )
             prop_placer(physics, random_state)
             super().initialize_episode(physics, random_state)
@@ -107,6 +104,6 @@ class PickAndLift(base.Task):
             observable.Generic(distance)
         for obs in self._task_observables.values():
             obs.enabled = True
-        self._task_observables['realsense/image'].enabled = False
+        # self._task_observables['realsense/image'].enabled = False
         self._gripper.observables.enable_all()
         self._prop.observables.enable_all()
