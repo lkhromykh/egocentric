@@ -90,9 +90,8 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
                 entropy_t = -log_pi_dash_t.mean(0)
                 target_entropy = (cfg.entropy_per_dim - 1.) * act_dim
                 actor_loss = -target_q_dash_t.mean(0) - sg(tau) * entropy_t
-        actor_loss = jnp.mean(not_reset * actor_loss)
-        temp_loss = tau * sg(entropy_t - target_entropy)
-        temp_loss = jnp.mean(not_reset * temp_loss)
+        actor_loss = jnp.mean(actor_loss)
+        temp_loss = tau * sg(entropy_t.mean() - target_entropy)
 
         adv_gap = target_q_dash_t.max(0) - target_q_dash_t.min(0)
         metrics = {
