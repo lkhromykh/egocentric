@@ -76,7 +76,9 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
         target_q_t = target_fn(target_q_t, v_t[1:], r_t, disc_t,
                                log_rho_t, cfg.lambda_)
         target_q_t = target_q_t.min(-1, keepdims=True)
-        critic_loss = jnp.square(q_t - sg(target_q_t)).mean()
+        critic_loss = jnp.square(q_t - sg(target_q_t))
+        not_reset = disc_t > 0
+        critic_loss = jnp.mean(jnp.expand_dims(not_reset, -1) * critic_loss)
 
         target_q_dash_t = target_q_dash_t.mean(-1)
         match cfg.action_space:
@@ -88,8 +90,9 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
                 entropy_t = -log_pi_dash_t.mean(0)
                 target_entropy = (cfg.entropy_per_dim - 1.) * act_dim
                 actor_loss = -target_q_dash_t.mean(0) - sg(tau) * entropy_t
-        actor_loss = jnp.mean(actor_loss)
-        temp_loss = tau * sg(entropy_t.mean() - target_entropy)
+        actor_loss = jnp.mean(not_reset * actor_loss)
+        temp_loss = tau * sg(entropy_t - target_entropy)
+        temp_loss = jnp.mean(not_reset * temp_loss)
 
         adv_gap = target_q_dash_t.max(0) - target_q_dash_t.min(0)
         metrics = {
