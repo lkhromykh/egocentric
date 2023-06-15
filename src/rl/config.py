@@ -7,9 +7,9 @@ Layers = tuple[int, ...]
 
 @dataclasses.dataclass
 class Config(_Config):
-    gamma: float = .97
+    gamma: float = .98
     lambda_: float = 1.
-    entropy_per_dim: float = .2
+    entropy_per_dim: float = .1
     num_actions: int = 20
 
     # Architecture
@@ -29,22 +29,22 @@ class Config(_Config):
     # Train
     jit: bool = True
     buffer_capacity: int = 10 ** 5
-    batch_size: int = 256
-    sequence_len: int = 2
-    utd: float = .5
+    batch_size: int = 128
+    sequence_len: int = 4
+    utd: float = .1
     learning_rate: float = 3e-4
     init_temperature: float = 1e-3
     temp_learning_rate: float = 1e-2
     polyak_tau: float = 5e-3
     weight_decay: float = 1e-6
-    max_grad: float = 10.
+    max_grad: float = 50.
     eval_every: int = 10_000
     train_after: int = 10_000
 
-    logdir: str = 'logdir/src_box_img'
+    logdir: str = 'logdir/src_box_img3'
     task: str = 'src'
     action_space: str = 'discrete'
-    num_envs: int = 8
+    num_envs: int = 16
     seed: int = 0
 
 

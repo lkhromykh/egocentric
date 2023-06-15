@@ -40,7 +40,7 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
         tau = jax.nn.softplus(tau) + 1e-8
         act_dim = a_t.shape[-1]
         match cfg.action_space:
-            # Avoid MC for a discrete action space.
+            # Avoid MC sampling for a discrete action space.
             case 'discrete':
                 pi_a_dash_t = jnp.eye(act_dim)
                 pi_a_dash_t = jnp.expand_dims(pi_a_dash_t, (1, 2))
@@ -66,9 +66,9 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
             case 'continuous':
                 v_t = target_q_dash_t.mean(0)
 
-        in_axes = 5 * (1,) + (None,)  # vec batch_dim
+        in_axes = 5 * (1,) + (None,)  # vmap batch_dim
         target_fn = jax.vmap(ops.retrace, in_axes, out_axes=1)
-        in_axes = 2 * (-1,) + 4 * (None,)  # vec qs ensemble
+        in_axes = 2 * (-1,) + 4 * (None,)  # vmap qs ensemble
         target_fn = jax.vmap(target_fn, in_axes, out_axes=-1)
 
         log_rho_t = log_pi_t - log_mu_t

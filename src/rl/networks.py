@@ -134,7 +134,6 @@ class Actor(hk.Module):
             case specs.BoundedArray():
                 fc = hk.Linear(2 * sp.shape[0], w_init=_last_w_init)
                 mean, std = jnp.split(fc(state), 2, -1)
-                std = jnp.clip(std, -12, 12)
                 std = jax.nn.sigmoid(std) + 1e-3
                 dist = tfd.Normal(mean, std)
                 dist = TransformedDistribution(dist, tfp.bijectors.Tanh())
