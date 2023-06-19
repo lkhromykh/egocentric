@@ -80,7 +80,7 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
                                log_rho_t, cfg.lambda_)
         target_q_t = target_q_t.min(-1, keepdims=True)
         critic_loss = jnp.square(q_t - sg(target_q_t))
-        not_reset = disc_t > 0  # mask wrong bootstrapping estimation
+        not_reset = disc_t > 0  # mask cross episode bootstrap estimation
         critic_loss = jnp.mean(jnp.expand_dims(not_reset, -1) * critic_loss)
 
         target_q_dash_t = target_q_dash_t.mean(-1)
