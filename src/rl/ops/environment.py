@@ -57,11 +57,9 @@ def train_loop(env: dm_env.Environment,
     trajectory['observations'].append(ts.observation)
 
     def stack(xs): return tree_map(lambda *x: np.stack(x), *xs)
-    trajectory = {
-        k: tree_map(stack, v, is_leaf=lambda x: isinstance(x, list))
-        for k, v in trajectory.items()
-    }
-    return trajectory, ts
+    trajectory = tree_map(
+        stack, trajectory, is_leaf=lambda x: isinstance(x, list))
+    return dict(trajectory), ts
 
 
 def eval_loop(env: dm_env.Environment, policy: ActionLogProbFn) -> np.floating:

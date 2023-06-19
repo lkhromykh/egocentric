@@ -34,15 +34,16 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
         # time major arrays are expected [TIME, BATCH, ...].
         chex.assert_tree_shape_prefix(obs_t, (cfg.sequence_len + 1, cfg.batch_size))
         chex.assert_tree_shape_prefix(a_t, (cfg.sequence_len, cfg.batch_size))
+
         policy_t = nets.actor(params, obs_t)
         log_pi_t = policy_t[:-1].log_prob(a_t)
         tau = jnp.maximum(params['~']['temperature'], -18.)
         tau = jax.nn.softplus(tau) + 1e-8
         act_dim = a_t.shape[-1]
         match cfg.action_space:
-            # Avoid MC sampling for a discrete action space.
+            # Avoid MC sampling for discrete action spaces.
             case 'discrete':
-                pi_a_dash_t = jnp.eye(act_dim)
+                pi_a_dash_t = jnp.eye(act_dim)  # as one_hot
                 pi_a_dash_t = jnp.expand_dims(pi_a_dash_t, (1, 2))
                 shape = (1, *policy_t.batch_shape, 1)
                 pi_a_dash_t = jnp.tile(pi_a_dash_t, shape)
@@ -66,10 +67,12 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
             case 'continuous':
                 v_t = target_q_dash_t.mean(0)
 
-        in_axes = 5 * (1,) + (None,)  # vmap batch_dim
-        target_fn = jax.vmap(ops.retrace, in_axes, out_axes=1)
-        in_axes = 2 * (-1,) + 4 * (None,)  # vmap qs ensemble
-        target_fn = jax.vmap(target_fn, in_axes, out_axes=-1)
+        in_axes = 5 * (1,) + (None,)
+        target_fn = jax.vmap(ops.retrace, in_axes,
+                             out_axes=1, axis_name='batch')
+        in_axes = 2 * (-1,) + 4 * (None,)
+        target_fn = jax.vmap(target_fn, in_axes,
+                             out_axes=-1, axis_name='q_ensemble')
 
         log_rho_t = log_pi_t - log_mu_t
         disc_t *= cfg.gamma
@@ -77,7 +80,7 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
                                log_rho_t, cfg.lambda_)
         target_q_t = target_q_t.min(-1, keepdims=True)
         critic_loss = jnp.square(q_t - sg(target_q_t))
-        not_reset = disc_t > 0
+        not_reset = disc_t > 0  # mask wrong bootstrapping estimation
         critic_loss = jnp.mean(jnp.expand_dims(not_reset, -1) * critic_loss)
 
         target_q_dash_t = target_q_dash_t.mean(-1)
@@ -129,9 +132,8 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
     def fuse(state: TrainingState,
              batch: types.Trajectory,
              ) -> tuple[TrainingState, types.Metrics]:
-        # Not passing num steps for compliance with the step signature.
-        num_steps = len(jax.tree_util.tree_leaves(batch)[0])
-        num_steps //= cfg.batch_size
+        # Not passing num steps for compliance with the StepFn signature.
+        num_steps = len(batch['rewards']) // cfg.batch_size
         for i in range(num_steps):
             b = cfg.batch_size * i
             e = b + cfg.batch_size

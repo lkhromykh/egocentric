@@ -8,13 +8,14 @@ import jax
 import jax.numpy as jnp
 import haiku as hk
 import tensorflow_probability.substrates.jax as tfp
-tfd = tfp.distributions
 
 from src.rl import types_ as types
 from src.rl.config import Config
 
 Array = types.Array
-_last_w_init = hk.initializers.TruncatedNormal(stddev=1e-3)
+_last_w_init = jnp.zeros
+# _last_w_init = hk.initializers.TruncatedNormal(stddev=1e-3)
+tfd = tfp.distributions
 
 
 class TransformedDistribution(tfd.TransformedDistribution):

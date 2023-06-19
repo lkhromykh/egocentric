@@ -20,7 +20,7 @@ class Config(_Config):
     cnn_depths: Layers = (64, 64, 64, 64)
     cnn_kernels: Layers = (3, 3, 3, 3)
     cnn_strides: Layers = (2, 2, 2, 2)
-    actor_keys: str = r'realsense'
+    actor_keys: str = r'robotiq|model|box|item'
     actor_layers: Layers = (512, 512)
     critic_keys: str = r'robotiq|model|box|item'
     critic_layers: Layers = (512, 512)
@@ -41,10 +41,10 @@ class Config(_Config):
     eval_every: int = 10_000
     train_after: int = 10_000
 
-    logdir: str = 'logdir/src_box_img4'
+    logdir: str = 'logdir/src_box_feat4step'
     task: str = 'src'
     action_space: str = 'discrete'
-    num_envs: int = 16
+    num_envs: int = 2
     seed: int = 0
 
 
