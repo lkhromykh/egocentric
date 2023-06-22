@@ -295,15 +295,11 @@ def _get_norm(norm: str) -> Callable[[Array], Array]:
         case 'none':
             return lambda x: x
         case 'layer':
-            return hk.LayerNorm(
-                axis=-1,
-                create_scale=True,
-                create_offset=True
-            )
+            return hk.LayerNorm(axis=-1,
+                                create_scale=True,
+                                create_offset=True)
         case 'rms':
-            return hk.RMSNorm(
-                axis=-1,
-                create_scale=True
-            )
+            return hk.RMSNorm(axis=-1,
+                              create_scale=True)
         case _:
             raise ValueError(norm)

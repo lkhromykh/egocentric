@@ -102,6 +102,11 @@ class PickAndLift(base.Task):
             return obj_pos - tcp_pos
         self._task_observables[f'{self._prop.mjcf_model.model}/distance'] =\
             observable.Generic(distance)
+
+        def displacement(physics):
+            pos, _ = self._get_mocap(physics)
+            return pos - self._init_pos
+        self._task_observables['displacement'] = observable.Generic(displacement)
         for obs in self._task_observables.values():
             obs.enabled = True
         # self._task_observables['realsense/image'].enabled = False

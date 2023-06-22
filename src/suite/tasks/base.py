@@ -33,7 +33,7 @@ class DiscreteActions(IntEnum):
     @staticmethod
     def as_array(action: int, dtype=np.float32) -> common.Array:
         idx, val = np.divmod(action, 2)
-        ar = np.zeros((4,), dtype=dtype)
+        ar = np.zeros(len(DiscreteActions) // 2, dtype=dtype)
         ar[idx] = -1 if val else 1
         return ar
 
@@ -110,6 +110,7 @@ class Task(abc.ABC, _Task):
             rgba=common.GREEN,
             name='mocap_bbox'
         )
+        self._init_pos = np.zeros_like(offset)
 
     def initialize_episode_mjcf(self, random_state):
         self._mjcf_variation.apply_variations(random_state)
@@ -119,6 +120,7 @@ class Task(abc.ABC, _Task):
         pos = self.workspace.tcp_box.sample(random_state)
         self._set_mocap(physics, pos, common.DOWN_QUATERNION)
         self._gripper.set_pose(physics, pos, common.DOWN_QUATERNION)
+        self._init_pos = pos
 
     def before_step(self, physics, action, random_state):
         if self.action_mod == 'discrete':
