@@ -35,10 +35,12 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
         chex.assert_tree_shape_prefix(obs_t, (cfg.sequence_len + 1, cfg.batch_size))
         chex.assert_tree_shape_prefix(a_t, (cfg.sequence_len, cfg.batch_size))
 
+        target_obs_t = obs_t.copy()
         for key, val in obs_t.items():
             if val.dtype == jnp.uint8:
-                rng, subkey = jax.random.split(rng)
-                obs_t[key] = ops.augmentation_fn(subkey, val, 2)
+                rng, k1, k2 = jax.random.split(rng, 3)
+                obs_t[key] = ops.augmentation_fn(k1, val, 4)
+                target_obs_t[key] = ops.augmentation_fn(k2, val, 4)
 
         policy_t = nets.actor(params, obs_t)
         log_pi_t = policy_t[:-1].log_prob(a_t)
@@ -59,11 +61,13 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
                         seed=rng, sample_shape=(cfg.num_actions,)
                     )
             case _: raise ValueError(cfg.action_space)
-        obs_tTm1 = tree_slice(obs_t, jnp.s_[:-1])
+        obs_tTm1, target_obs_tTm1 = tree_slice(
+            (obs_t, target_obs_t), jnp.s_[:-1])
         q_t = nets.critic(params, obs_tTm1, a_t)
-        target_q_t = nets.critic(target_params, obs_tTm1, a_t)
-        target_q_dash_t = jax.vmap(nets.critic, in_axes=(None, None, 0)
-                                   )(target_params, obs_t, pi_a_dash_t)
+        target_q_t = nets.critic(target_params, target_obs_tTm1, a_t)
+        target_q_dash_t = jax.vmap(
+            nets.critic, in_axes=(None, None, 0))(
+            target_params, target_obs_tTm1, pi_a_dash_t)
         match cfg.action_space:
             case 'discrete':
                 prob_t = jnp.exp(log_pi_dash_t)

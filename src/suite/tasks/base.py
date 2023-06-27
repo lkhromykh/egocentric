@@ -110,7 +110,6 @@ class Task(abc.ABC, _Task):
             rgba=common.GREEN,
             name='mocap_bbox'
         )
-        self._init_pos = np.zeros_like(offset)
 
     def initialize_episode_mjcf(self, random_state):
         self._mjcf_variation.apply_variations(random_state)
@@ -120,7 +119,6 @@ class Task(abc.ABC, _Task):
         pos = self.workspace.tcp_box.sample(random_state)
         self._set_mocap(physics, pos, common.DOWN_QUATERNION)
         self._gripper.set_pose(physics, pos, common.DOWN_QUATERNION)
-        self._init_pos = pos
 
     def before_step(self, physics, action, random_state):
         if self.action_mod == 'discrete':
@@ -205,8 +203,8 @@ class Task(abc.ABC, _Task):
         )
         self._mjcf_variation.bind_attributes(
             self._arena.groundplane_material,
-            texrepeat=uni(1., 5.),
-            specular=uni(0., 1.),
+            texrepeat=uni(1., 8.),
+            specular=uni(),
             shininess=uni(),
         )
 
@@ -219,7 +217,7 @@ class Task(abc.ABC, _Task):
         self._mjcf_variation.bind_attributes(
             self._camera,
             pos=noises.Additive(distributions.Uniform(-0.01, 0.01)),
-            quat=axis_var(uni(-0.05, 0.04), 3),
+            quat=axis_var(uni(-0.05, 0.05), 3),
             fovy=noises.Additive(uni(-10, 10))
         )
 
