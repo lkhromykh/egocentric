@@ -21,9 +21,9 @@ class Config(_Config):
     cnn_kernels: Layers = (3, 3, 3, 3)
     cnn_strides: Layers = (2, 2, 2, 2)
     actor_keys: str = r'realsense|tcp_height|object_detected'
-    actor_layers: Layers = (512, 512)
+    actor_layers: Layers = (512, 512, 256)
     critic_keys: str = r'robotiq|model|box|item'
-    critic_layers: Layers = (512, 512)
+    critic_layers: Layers = (512, 512, 256)
     ensemble_size: int = 2
 
     # Train
