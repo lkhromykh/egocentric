@@ -38,7 +38,8 @@ class FromOneHot(Wrapper):
 
 def _nan_to_num(x):
     """dm_env.Timestep contains None on an episode reset."""
-    return np.nan_to_num(x, copy=True, nan=0.)
+    # For somewhat reason np.nan_to_num doesn't work.
+    return np.where(x == None, 0., x).astype(float)
 
 
 def train_loop(env: dm_env.Environment,

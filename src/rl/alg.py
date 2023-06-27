@@ -35,13 +35,12 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
         chex.assert_tree_shape_prefix(obs_t, (cfg.sequence_len + 1, cfg.batch_size))
         chex.assert_tree_shape_prefix(a_t, (cfg.sequence_len, cfg.batch_size))
 
-        target_obs_t = obs_t
-        # target_obs_t = jax.tree_util.tree_map(jnp.copy, obs_t)
-        # for key, val in obs_t.items():
-        #     if val.dtype == jnp.uint8:
-        #         rng, k1, k2 = jax.random.split(rng, 3)
-        #         target_obs_t[key] = ops.augmentation_fn(k1, val, 4)
-        #         obs_t[key] = ops.augmentation_fn(k1, val, 4)
+        target_obs_t = obs_t.copy()
+        for key, val in obs_t.items():
+            if val.dtype == jnp.uint8:
+                rng, k1, k2 = jax.random.split(rng, 3)
+                target_obs_t[key] = ops.augmentation_fn(k1, val, 4)
+                obs_t[key] = ops.augmentation_fn(k2, val, 4)
 
         policy_t = nets.actor(params, obs_t)
         log_pi_t = policy_t[:-1].log_prob(a_t)
