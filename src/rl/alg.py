@@ -35,6 +35,11 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
         chex.assert_tree_shape_prefix(obs_t, (cfg.sequence_len + 1, cfg.batch_size))
         chex.assert_tree_shape_prefix(a_t, (cfg.sequence_len, cfg.batch_size))
 
+        for key, val in obs_t.items():
+            if val.dtype == jnp.uint8:
+                rng, subkey = jax.random.split(rng)
+                obs_t[key] = ops.augmentation_fn(subkey, val, 2)
+
         policy_t = nets.actor(params, obs_t)
         log_pi_t = policy_t[:-1].log_prob(a_t)
         tau = jnp.maximum(params['~']['temperature'], -18.)

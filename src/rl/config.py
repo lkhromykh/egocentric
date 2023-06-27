@@ -16,14 +16,14 @@ class Config(_Config):
     activation: str = 'elu'
     normalization: str = 'layer'
     asymmetric: bool = True
-    mlp_layers: Layers = (512,)
+    mlp_layers: Layers = (256,)
     cnn_depths: Layers = (64, 64, 64, 64)
     cnn_kernels: Layers = (3, 3, 3, 3)
     cnn_strides: Layers = (2, 2, 2, 2)
-    actor_keys: str = r'realsense|displacement'
-    actor_layers: Layers = (512, 512)
+    actor_keys: str = r'realsense|tcp_height|object_detected'
+    actor_layers: Layers = (512, 512, 256)
     critic_keys: str = r'robotiq|model|box|item'
-    critic_layers: Layers = (512, 512)
+    critic_layers: Layers = (512, 512, 256)
     ensemble_size: int = 2
 
     # Train
@@ -41,7 +41,7 @@ class Config(_Config):
     eval_every: int = 10_000
     train_after: int = 10_000
 
-    logdir: str = 'logdir/src_box_img1step_wtcp_pose'
+    logdir: str = 'logdir/src_box_img1step_wheightndetected'
     task: str = 'src'
     action_space: str = 'discrete'
     num_envs: int = 16

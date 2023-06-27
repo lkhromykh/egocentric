@@ -54,8 +54,8 @@ class PickAndLift(base.Task):
             self._prop.detach()
             # self._prop = entities.HouseholdItem(item)
             self._prop = Box(
-                half_lengths=common.BOX_SIZE,
-                mass=common.BOX_MASS,
+                half_lengths=tuple(random_state.uniform(0.01, .03, 3)),
+                mass=random_state.uniform(0.1, 1.),
             )
             rgba = np.concatenate([random_state.uniform(0, 1., 3), [1]])
             self._prop.geom.rgba = rgba
@@ -103,10 +103,10 @@ class PickAndLift(base.Task):
         self._task_observables[f'{self._prop.mjcf_model.model}/distance'] =\
             observable.Generic(distance)
 
-        def displacement(physics):
+        def height(physics):
             pos, _ = self._get_mocap(physics)
-            return pos - self._init_pos
-        self._task_observables['displacement'] = observable.Generic(displacement)
+            return pos[-1:]
+        self._task_observables['tcp_height'] = observable.Generic(height)
         for obs in self._task_observables.values():
             obs.enabled = True
         # self._task_observables['realsense/image'].enabled = False

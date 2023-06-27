@@ -26,18 +26,32 @@ class Arena(Entity):
             markrgb='1 1 1',
             random=.01
         )
+        self._groundplane_texture = self._mjcf_root.asset.add(
+            'texture',
+            name='groundplane',
+            type='2d',
+            builtin='gradient',
+            rgb1=(.4, .4, .4),
+            rgb2=(.5, .5, .5),
+            mark='random',
+            markrgb='1 1 1',
+            random=0.01,
+            width=300,
+            height=300
+        )
 
         self._groundplane_material = self._mjcf_root.asset.add(
             'material',
             name='groundplane',
+            texture=self._groundplane_texture,
+            texrepeat='1 1',
             specular=.7,
             shininess=.1,
-            reflectance=.0,
-            rgba=(.4, .4, .4, 1.)
+            reflectance=0,
         )
         self._groundplane = self._mjcf_root.worldbody.add(
             'geom',
-            name='ground',
+            name='groundplane',
             type='plane',
             material=self._groundplane_material,
             size=(4, 1.5, 0.01),
@@ -96,6 +110,10 @@ class Arena(Entity):
     @property
     def skybox(self):
         return self._skybox
+
+    @property
+    def groundplane_texture(self):
+        return self._groundplane_texture
 
     @property
     def groundplane_material(self):

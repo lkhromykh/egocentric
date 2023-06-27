@@ -188,18 +188,26 @@ class Task(abc.ABC, _Task):
         for light in self.root_entity.mjcf_model.worldbody.find_all('light'):
             self._mjcf_variation.bind_attributes(
                 light,
-                pos=noises.Additive(uni(-.4, .4)),
+                pos=noises.Additive(uni(-.6, .6)),
                 diffuse=eq_noise(.1, .7),
                 specular=eq_noise(.05, .3),
                 ambient=eq_noise(.05, .4)
             )
 
-        def rgb(init, cur, random_state):
-            noise = random_state.uniform(0., 1., len(init) - 1)
-            return np.concatenate([noise, [1.]])
+        self._mjcf_variation.bind_attributes(
+            self._arena.groundplane_texture,
+            rgb1=uni(),
+            rgb2=uni(),
+            builtin=distributions.UniformChoice(('gradient', 'checker', 'flat')),
+            mark='random',
+            markrgb=uni(),
+            random=uni(0., .1),
+        )
         self._mjcf_variation.bind_attributes(
             self._arena.groundplane_material,
-            rgba=rgb
+            texrepeat=uni(1., 5.),
+            specular=uni(0., 1.),
+            shininess=uni(),
         )
 
         def axis_var(dist, idx):
@@ -210,15 +218,15 @@ class Task(abc.ABC, _Task):
             return noise_fn
         self._mjcf_variation.bind_attributes(
             self._camera,
-            pos=axis_var(uni(-.01, .01), 1),
-            quat=axis_var(uni(-0.04, 0.04), 3),
-            fovy=noises.Additive(uni(-8, 8))
+            pos=noises.Additive(distributions.Uniform(-0.01, 0.01)),
+            quat=axis_var(uni(-0.05, 0.04), 3),
+            fovy=noises.Additive(uni(-10, 10))
         )
 
     def _build_observables(self):
         """Enable required observables."""
         def noisy_cam(img, random_state):
-            noise = random_state.randint(-20, 20, img.shape)
+            noise = random_state.randint(-25, 25, img.shape)
             img = np.clip(img + noise, 0, 255).astype(img.dtype)
             return img
         self._task_observables['realsense/image'].corruptor = noisy_cam
