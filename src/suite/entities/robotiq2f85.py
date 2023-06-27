@@ -76,6 +76,6 @@ class RobotiqObservables(composer.Observables):
     @composer.observable
     def object_detected(self):
         _, max_force = self._entity.actuators[0].forcerange
-        def detector(v, random_state): return float(v > .8 * max_force)
+        def detector(v, random_state): return (v > .8 * max_force).astype(float)
         return observable.MJCFFeature('force', self._entity.actuators,
                                       corruptor=detector)
