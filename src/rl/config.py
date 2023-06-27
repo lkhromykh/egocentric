@@ -41,7 +41,7 @@ class Config(_Config):
     eval_every: int = 10_000
     train_after: int = 10_000
 
-    logdir: str = 'logdir/src_box_img1step_wheightndetected1'
+    logdir: str = 'logdir/src_box_img1step_wheightndetected'
     task: str = 'src'
     action_space: str = 'discrete'
     num_envs: int = 16

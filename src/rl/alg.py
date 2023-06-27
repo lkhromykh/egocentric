@@ -67,7 +67,7 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
         target_q_t = nets.critic(target_params, target_obs_tTm1, a_t)
         target_q_dash_t = jax.vmap(
             nets.critic, in_axes=(None, None, 0))(
-            target_params, target_obs_tTm1, pi_a_dash_t)
+            target_params, target_obs_t, pi_a_dash_t)
         match cfg.action_space:
             case 'discrete':
                 prob_t = jnp.exp(log_pi_dash_t)
