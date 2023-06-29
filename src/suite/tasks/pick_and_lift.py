@@ -70,7 +70,7 @@ class PickAndLift(base.Task):
             prop_placer = initializers.PropPlacer(
                 props=[self._prop],
                 position=distributions.Uniform(*self.workspace.prop_box),
-                # quaternion=workspaces.uniform_z_rotation,
+                quaternion=workspaces.uniform_z_rotation,
                 ignore_collisions=False,
                 settle_physics=True,
             )

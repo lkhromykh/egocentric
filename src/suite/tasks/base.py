@@ -189,7 +189,7 @@ class Task(abc.ABC, _Task):
                 pos=noises.Additive(uni(-.6, .6)),
                 diffuse=eq_noise(.1, .7),
                 specular=eq_noise(.05, .3),
-                ambient=eq_noise(.05, .4)
+                ambient=eq_noise(.05, .5)
             )
 
         self._mjcf_variation.bind_attributes(
@@ -208,16 +208,10 @@ class Task(abc.ABC, _Task):
             shininess=uni(),
         )
 
-        def axis_var(dist, idx):
-            def noise_fn(init, cur, rng):
-                noise = np.zeros_like(init)
-                noise[idx] = dist(init[idx], cur[idx], rng)
-                return init + noise
-            return noise_fn
         self._mjcf_variation.bind_attributes(
             self._camera,
-            pos=noises.Additive(distributions.Uniform(-0.01, 0.01)),
-            quat=axis_var(uni(-0.05, 0.05), 3),
+            pos=noises.Additive(uni(-0.01, 0.01)),
+            quat=noises.Additive(uni(-0.03, 0.03)),
             fovy=noises.Additive(uni(-10, 10))
         )
 
