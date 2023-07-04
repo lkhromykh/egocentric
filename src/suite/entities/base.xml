@@ -20,8 +20,7 @@
 
     <visual>
         <map znear="0.01"/>
-        <headlight diffuse=".6 .6 .6" ambient=".3 .3 .3"
-                   specular="0 0 0" active="0"/>
+        <headlight active="0"/>
         <scale forcewidth="0.1" contactwidth="0.3" contactheight="0.1"
         jointwidth=".1" framewidth=".1" framelength="1."/>
     </visual>

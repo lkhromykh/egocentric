@@ -25,15 +25,15 @@ class DiscreteActions(IntEnum):
     LEFT = 3
     UP = 4
     DOWN = 5
-    ROLL_CW = 6
-    ROLL_CCW = 7
-    CLOSE = 8
-    OPEN = 9
+    CLOSE = 6
+    OPEN = 7
+    ROLL_CW = 8
+    ROLL_CCW = 9
 
     @staticmethod
     def as_array(action: int, dtype=np.float32) -> common.Array:
         idx, val = np.divmod(action, 2)
-        ar = np.zeros((5,), dtype=dtype)
+        ar = np.zeros(len(DiscreteActions) // 2, dtype=dtype)
         ar[idx] = -1 if val else 1
         return ar
 
@@ -116,7 +116,10 @@ class Task(abc.ABC, _Task):
 
     def initialize_episode(self, physics, random_state):
         self._physics_variation.apply_variations(physics, random_state)
-        pos = self.workspace.tcp_box.sample(random_state)
+        pos = random_state.uniform(
+            self.workspace.tcp_box.lower + np.array([0, 0, .1]),
+            self.workspace.tcp_box.upper
+        )
         self._set_mocap(physics, pos, common.DOWN_QUATERNION)
         self._gripper.set_pose(physics, pos, common.DOWN_QUATERNION)
 
@@ -125,13 +128,17 @@ class Task(abc.ABC, _Task):
             action = DiscreteActions.as_array(action)
         else:
             action = np.clip(action, -1, 1)
-        pos, rot, grip = map(np.squeeze, np.split(action, [3, 4]))
+        pos, grip, rot = map(np.squeeze, np.split(action, [3, 4]))
         mocap_pos, mocap_quat = self._get_mocap(physics)
-        rot = common.ROT_LIMIT * np.array([0, 0, rot])
-        rot = transformations.euler_to_quat(rot)
+        if rot.size and rot:
+            rot = common.ROT_LIMIT * np.array([0, 0, rot])
+            rot = transformations.euler_to_quat(rot)
+            quat = transformations.quat_mul(mocap_quat, rot)
+        else:
+            quat = None
         self._set_mocap(physics,
                         pos=mocap_pos + common.CTRL_LIMIT * pos,
-                        quat=transformations.quat_mul(mocap_quat, rot)
+                        quat=quat
                         )
         if grip:
             self._gripper.set_grasp(physics, float(grip > 0.))
@@ -186,31 +193,43 @@ class Task(abc.ABC, _Task):
         for light in self.root_entity.mjcf_model.worldbody.find_all('light'):
             self._mjcf_variation.bind_attributes(
                 light,
-                pos=noises.Additive(uni(-.4, .4)),
-                diffuse=eq_noise(0., .7),
-                specular=eq_noise(0., .7),
-                ambient=eq_noise(0., .7)
+                pos=noises.Additive(uni(-.6, .6)),
+                diffuse=eq_noise(.05, .7),
+                specular=eq_noise(.05, .3),
+                ambient=eq_noise(.05, .5)
             )
 
-        def rgb(init, cur, random_state):
-            noise = random_state.uniform(0., 1., len(init) - 1)
-            return np.concatenate([noise, [1.]])
+        self._mjcf_variation.bind_attributes(
+            self._arena.groundplane_texture,
+            rgb1=uni(),
+            rgb2=uni(),
+            builtin=distributions.UniformChoice(('gradient', 'checker', 'flat')),
+            mark='random',
+            markrgb=uni(),
+            random=uni(0., .1),
+        )
         self._mjcf_variation.bind_attributes(
             self._arena.groundplane_material,
-            rgba=rgb
+            texrepeat=uni(1., 8.),
+            specular=uni(),
+            shininess=uni(),
         )
 
-        def axis_var(dist, idx):
-            def noise_fn(init, cur, rng):
-                noise = np.zeros_like(init)
-                noise[idx] = dist(init[idx], cur[idx], rng)
-                return init + noise
-            return noise_fn
         self._mjcf_variation.bind_attributes(
             self._camera,
-            pos=axis_var(uni(-.01, .01), 1),
-            quat=axis_var(uni(-0.05, 0.05), 3),
-            fovy=noises.Additive(uni(-12, 12))
+            pos=noises.Additive(uni(-0.01, 0.01)),
+            quat=noises.Additive(uni(-0.03, 0.03)),
+            fovy=noises.Additive(uni(-10, 10))
+        )
+
+        def h_noise(init, cur, rng):
+            noise = rng.uniform(-0.015, 0.015)
+            zeros = np.zeros_like(init)
+            zeros[2] = noise
+            return init + zeros
+        self._mjcf_variation.bind_attributes(
+            self._gripper.tool_center_point,
+            pos=h_noise
         )
 
     def _build_observables(self):

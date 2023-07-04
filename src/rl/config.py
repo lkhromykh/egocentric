@@ -7,44 +7,44 @@ Layers = tuple[int, ...]
 
 @dataclasses.dataclass
 class Config(_Config):
-    gamma: float = .97
+    gamma: float = .98
     lambda_: float = 1.
     entropy_per_dim: float = .1
     num_actions: int = 20
 
     # Architecture
-    activation: str = 'relu'
-    normalization: str = 'none'
+    activation: str = 'elu'
+    normalization: str = 'layer'
     asymmetric: bool = True
-    mlp_layers: Layers = (256,)
-    cnn_depths: Layers = (32, 32, 32, 32)
+    mlp_layers: Layers = (512,)
+    cnn_depths: Layers = (64, 64, 64, 64)
     cnn_kernels: Layers = (3, 3, 3, 3)
     cnn_strides: Layers = (2, 2, 2, 2)
-    actor_keys: str = r'realsense'
-    actor_layers: Layers = (256, 256)
+    actor_keys: str = r'realsense|tcp_height|object_detected'
+    actor_layers: Layers = (512, 512, 512)
     critic_keys: str = r'.*'
-    critic_layers: Layers = (256, 256)
-    ensemble_size: int = 1
+    critic_layers: Layers = (512, 512, 512)
+    ensemble_size: int = 2
 
     # Train
     jit: bool = True
     buffer_capacity: int = 10 ** 5
-    batch_size: int = 32
-    sequence_len: int = 16
+    batch_size: int = 256
+    sequence_len: int = 2
     utd: float = .1
     learning_rate: float = 3e-4
-    init_temperature: float = 1e-1
+    init_temperature: float = 1e-3
     temp_learning_rate: float = 1e-2
     polyak_tau: float = 5e-3
     weight_decay: float = 1e-6
     max_grad: float = 50.
-    eval_every: int = 5_000
-    train_after: int = 5_000
+    eval_every: int = 10_000
+    train_after: int = 10_000
 
-    logdir: str = 'logdir/src_newmodels'
+    logdir: str = 'logdir/src_household_img2step_wheightndetected_tcaug'
     task: str = 'src'
     action_space: str = 'discrete'
-    num_envs: int = 8
+    num_envs: int = 16
     seed: int = 0
 
 

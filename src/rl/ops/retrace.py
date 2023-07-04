@@ -33,7 +33,7 @@ def retrace2(q_t: chex.Array,
              log_rho_t: chex.Array,
              lambda_: float
              ) -> chex.Array:
-    """Equivalent estimation from the 1611.01224."""
+    """Equivalent form from the 1611.01224."""
     rho_t = lambda_ * jnp.minimum(1, jnp.exp(log_rho_t))
     q_tp1 = jnp.roll(q_t, -1)
     xs = (q_tp1, v_tp1, r_t, disc_t, rho_t)

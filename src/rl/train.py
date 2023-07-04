@@ -6,8 +6,8 @@ import cloudpickle
 import numpy as np
 import jax
 import haiku as hk
-# import chex
-# chex.disable_asserts()
+import chex
+chex.disable_asserts()
 # jax.config.update('jax_platform_name', 'cpu')
 
 from rltools import loggers
@@ -31,11 +31,6 @@ def main(cfg: Config):
     nets = builder.make_networks(env)
     params = nets.init(next(rngseq))
     state = builder.make_training_state(next(rngseq), params)
-    if os.path.exists(path := builder.exp_path(Builder.STATE)):
-        print('Loading existing state.')
-        with open(path, 'rb') as f:
-            state = cloudpickle.load(f)
-            state = jax.device_put(state)
     step = builder.make_step_fn(nets)
     logger = loggers.TFSummaryLogger(cfg.logdir, label='', step_key='step')
     print("Number of params: %d" % hk.data_structures.tree_size(params))
@@ -58,8 +53,6 @@ def main(cfg: Config):
         if interactions < cfg.train_after:
             continue
         batch = next(ds)
-        act = batch['actions'].argmax(-1)
-        print(act.mean(), act.std())
         state, metrics = step(state, batch)
         fps = interactions / (time.time() - start)
         metrics.update(step=interactions, fps=fps)

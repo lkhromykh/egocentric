@@ -36,6 +36,12 @@ class FromOneHot(Wrapper):
         return self._act_spec
 
 
+def _nan_to_num(x):
+    """dm_env.Timestep contains None on an episode reset."""
+    # For somewhat reason np.nan_to_num doesn't work.
+    return np.where(x == None, 0., x).astype(float)
+
+
 def train_loop(env: dm_env.Environment,
                policy: ActionLogProbFn,
                num_steps: int,
@@ -47,8 +53,8 @@ def train_loop(env: dm_env.Environment,
         obs = ts.observation
         action, log_prob = policy(obs)
         ts = env.step(action)
-        reward = _from_none(ts.reward)
-        discount = _from_none(ts.discount)
+        reward = _nan_to_num(ts.reward)
+        discount = _nan_to_num(ts.discount)
         trajectory['observations'].append(obs)
         trajectory['actions'].append(action)
         trajectory['rewards'].append(reward)
@@ -57,11 +63,9 @@ def train_loop(env: dm_env.Environment,
     trajectory['observations'].append(ts.observation)
 
     def stack(xs): return tree_map(lambda *x: np.stack(x), *xs)
-    trajectory = {
-        k: tree_map(stack, v, is_leaf=lambda x: isinstance(x, list))
-        for k, v in trajectory.items()
-    }
-    return trajectory, ts
+    trajectory = tree_map(
+        stack, trajectory, is_leaf=lambda x: isinstance(x, list))
+    return dict(trajectory), ts
 
 
 def eval_loop(env: dm_env.Environment, policy: ActionLogProbFn) -> np.floating:
@@ -72,11 +76,6 @@ def eval_loop(env: dm_env.Environment, policy: ActionLogProbFn) -> np.floating:
     while cont.any():
         action, _ = policy(ts.observation)
         ts = env.step(action)
-        reward += cont * _from_none(ts.reward)
+        reward += cont * _nan_to_num(ts.reward)
         cont *= np.logical_not(ts.last())
     return reward
-
-
-def _from_none(x, fill_value=0., dtype=float):
-    """First dm_env.TimeStep may contain None."""
-    return np.where(x == None, fill_value, x).astype(dtype)

@@ -1,6 +1,5 @@
 import jax
 import jax.numpy as jnp
-from jax.scipy.special import logsumexp
 import haiku as hk
 import chex
 import optax
@@ -16,14 +15,11 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
     sg = jax.lax.stop_gradient
     def tree_slice(t, sl): return jax.tree_util.tree_map(lambda x: x[sl], t)
 
-    def cross_entropy(q_values, log_probs, temperature, target_entropy):
-        tempered_q_values = sg(q_values) / temperature
+    def cross_entropy(q_values, log_probs, temperature):
+        tempered_q_values = q_values / temperature
         normalized_weights = jax.nn.softmax(tempered_q_values, axis=0)
         normalized_weights = sg(normalized_weights)
-        cross_entropy_loss = -jnp.sum(normalized_weights * log_probs, axis=0)
-        temp_loss = logsumexp(tempered_q_values, 0) - target_entropy
-        temp_loss *= temperature
-        return cross_entropy_loss, temp_loss
+        return -jnp.sum(normalized_weights * log_probs, axis=0)
 
     def loss_fn(
             params: hk.Params,
@@ -43,44 +39,63 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
         log_pi_t = policy_t[:-1].log_prob(a_t)
         tau = jnp.maximum(params['~']['temperature'], -18.)
         tau = jax.nn.softplus(tau) + 1e-8
-        pi_a_dash_t, log_pi_dash_t = policy_t.experimental_sample_and_log_prob(
-            seed=rng, sample_shape=(cfg.num_actions,))
+        act_dim = a_t.shape[-1]
+        match cfg.action_space:
+            # Avoid MC sampling for discrete action spaces.
+            case 'discrete':
+                pi_a_dash_t = jnp.eye(act_dim)  # as one_hot
+                pi_a_dash_t = jnp.expand_dims(pi_a_dash_t, (1, 2))
+                shape = (1, *policy_t.batch_shape, 1)
+                pi_a_dash_t = jnp.tile(pi_a_dash_t, shape)
+                log_pi_dash_t = policy_t.log_prob(pi_a_dash_t)
+            case 'continuous':
+                pi_a_dash_t, log_pi_dash_t = \
+                    policy_t.experimental_sample_and_log_prob(
+                        seed=rng, sample_shape=(cfg.num_actions,)
+                    )
+            case _: raise ValueError(cfg.action_space)
         obs_tTm1 = tree_slice(obs_t, jnp.s_[:-1])
         q_t = nets.critic(params, obs_tTm1, a_t)
         target_q_t = nets.critic(target_params, obs_tTm1, a_t)
-        target_q_dash_t = jax.vmap(nets.critic, in_axes=(None, None, 0)
-                                   )(target_params, obs_t, pi_a_dash_t)
-        target_q_t, target_q_dash_t = map(
-            lambda x: x.min(-1),  # pessimistic critics ensembling
-            (target_q_t, target_q_dash_t)
-        )
-        v_t = target_q_dash_t.mean(0)
+        target_q_dash_t = jax.vmap(
+            nets.critic, in_axes=(None, None, 0))(
+            target_params, obs_t, pi_a_dash_t)
+        match cfg.action_space:
+            case 'discrete':
+                prob_t = jnp.exp(log_pi_dash_t)
+                v_t = jnp.expand_dims(prob_t, -1) * target_q_dash_t
+                v_t = jnp.sum(v_t, 0)
+            case 'continuous':
+                v_t = target_q_dash_t.mean(0)
 
         in_axes = 5 * (1,) + (None,)
-        target_fn = jax.vmap(ops.retrace, in_axes, out_axes=1)
+        target_fn = jax.vmap(ops.retrace, in_axes,
+                             out_axes=1, axis_name='batch')
+        in_axes = 2 * (-1,) + 4 * (None,)
+        target_fn = jax.vmap(target_fn, in_axes,
+                             out_axes=-1, axis_name='q_ensemble')
+
         log_rho_t = log_pi_t - log_mu_t
         disc_t *= cfg.gamma
         target_q_t = target_fn(target_q_t, v_t[1:], r_t, disc_t,
                                log_rho_t, cfg.lambda_)
-        target_q_t = jnp.expand_dims(target_q_t, -1)
-        critic_loss = jnp.square(q_t - sg(target_q_t)).mean()
+        target_q_t = target_q_t.min(-1, keepdims=True)
+        critic_loss = jnp.square(q_t - sg(target_q_t))
+        not_reset = disc_t > 0  # mask cross episode bootstrap estimation
+        critic_loss = jnp.mean(jnp.expand_dims(not_reset, -1) * critic_loss)
 
-        act_dim = a_t.shape[-1]
+        target_q_dash_t = target_q_dash_t.mean(-1)
         match cfg.action_space:
-            case 'continuous':
-                entropy_t = -log_pi_dash_t.mean(0)
-                actor_loss = -v_t - sg(tau) * entropy_t
-                target_entropy = (cfg.entropy_per_dim - 1.) * act_dim
-                temp_loss = tau * sg(entropy_t - target_entropy)
             case 'discrete':
                 entropy_t = policy_t.entropy()
                 target_entropy = cfg.entropy_per_dim * jnp.log(act_dim)
-                actor_loss, temp_loss = cross_entropy(
-                    target_q_dash_t, log_pi_dash_t, tau, target_entropy)
-            case _:
-                raise ValueError(cfg.action_space)
+                actor_loss = cross_entropy(target_q_dash_t, log_pi_dash_t, tau)
+            case 'continuous':
+                entropy_t = -log_pi_dash_t.mean(0)
+                target_entropy = (cfg.entropy_per_dim - 1.) * act_dim
+                actor_loss = -target_q_dash_t.mean(0) - sg(tau) * entropy_t
         actor_loss = jnp.mean(actor_loss)
-        temp_loss = jnp.mean(temp_loss)
+        temp_loss = tau * sg(entropy_t.mean() - target_entropy)
 
         adv_gap = target_q_dash_t.max(0) - target_q_dash_t.min(0)
         metrics = {
@@ -109,18 +124,17 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
             ('observations', 'actions', 'rewards', 'discounts', 'log_probs')
         )
         grad_fn = jax.grad(loss_fn, has_aux=True)
-        grads, metrics = grad_fn(params, target_params, subkey, *args)
-        metrics.update(grad_norm=optax.global_norm(grads))
-        state = state.update(grads)
+        grad, metrics = grad_fn(params, target_params, subkey, *args)
+        metrics.update(grad_norm=optax.global_norm(grad))
+        state = state.update(grad)
         return state.replace(rng=rng), metrics
 
     @chex.assert_max_traces(1)
     def fuse(state: TrainingState,
              batch: types.Trajectory,
              ) -> tuple[TrainingState, types.Metrics]:
-        # Not passing num steps for compliance with the step signature.
-        num_steps = len(jax.tree_util.tree_leaves(batch)[0])
-        num_steps //= cfg.batch_size
+        # Not passing num steps for compliance with the StepFn signature.
+        num_steps = len(batch['rewards']) // cfg.batch_size
         for i in range(num_steps):
             b = cfg.batch_size * i
             e = b + cfg.batch_size

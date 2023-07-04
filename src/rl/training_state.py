@@ -13,17 +13,16 @@ class TrainingState(NamedTuple):
     opt_state: optax.OptState
     rng: jax.random.PRNGKey
     step: jnp.ndarray
-
     tx: optax.TransformUpdateFn
     target_update_var: float
 
-    def update(self, grads: hk.Params) -> 'TrainingState':
+    def update(self, grad: hk.Params) -> 'TrainingState':
         params = self.params
         target_params = self.target_params
         opt_state = self.opt_state
         step = self.step
 
-        updates, opt_state = self.tx(grads, opt_state, params)
+        updates, opt_state = self.tx(grad, opt_state, params)
         params = optax.apply_updates(params, updates)
         target_params = optax.incremental_update(
             params, target_params, self.target_update_var)
