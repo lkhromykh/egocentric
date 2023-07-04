@@ -1,6 +1,5 @@
 import os
 
-import numpy as np
 from dm_control.composer import initializers
 from dm_control.composer.observation import observable
 from dm_control.composer.environment import EpisodeInitializationError
@@ -11,6 +10,9 @@ from dm_control.manipulation.shared import workspaces
 from src.suite import entities
 from src.suite import common
 from src.suite.tasks import base
+
+_ITEMS = os.listdir(entities.HouseholdItem.DATA_DIR)
+_ITEMS.remove('Seagate_1TB_Backup_Plus_portable_drive_for_Mac')
 
 
 class Box(entities.BoxWithVertexSites):
@@ -45,8 +47,7 @@ class PickAndLift(base.Task):
     def initialize_episode_mjcf(self, random_state):
         try:
             super().initialize_episode_mjcf(random_state)
-            items = os.listdir(entities.HouseholdItem.DATA_DIR)
-            item = random_state.choice(items)
+            item = random_state.choice(_ITEMS)
             self._prop.detach()
             self._prop = entities.HouseholdItem(item)
             self._prop.observables.enable_all()
