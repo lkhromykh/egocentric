@@ -97,7 +97,13 @@ class PickAndLift(base.Task):
         def height(physics):
             pos, _ = self._get_mocap(physics)
             return pos[-1:]
-        self._task_observables['tcp_height'] = observable.Generic(height)
+
+        def h_corruptor(val, random_state):
+            noise = random_state.uniform(-0.01, 0.01)
+            return val + noise
+        tcp_height = observable.Generic(height)
+        tcp_height.corruptor = h_corruptor
+        self._task_observables['tcp_height'] = tcp_height
         for obs in self._task_observables.values():
             obs.enabled = True
         self._gripper.observables.enable_all()

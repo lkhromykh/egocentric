@@ -223,16 +223,6 @@ class Task(abc.ABC, _Task):
             fovy=noises.Additive(uni(-10, 10))
         )
 
-        def h_noise(init, cur, rng):
-            noise = rng.uniform(-0.015, 0.015)
-            zeros = np.zeros_like(init)
-            zeros[2] = noise
-            return init + zeros
-        self._mjcf_variation.bind_attributes(
-            self._gripper.tool_center_point,
-            pos=h_noise
-        )
-
     def _build_observables(self):
         """Enable required observables."""
         cam = self._camera.name
