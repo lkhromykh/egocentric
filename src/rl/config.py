@@ -16,14 +16,14 @@ class Config(_Config):
     activation: str = 'elu'
     normalization: str = 'layer'
     asymmetric: bool = True
-    mlp_layers: Layers = (512,)
-    cnn_depths: Layers = (64, 64, 64, 64)
+    mlp_layers: Layers = (256,)
+    cnn_depths: Layers = (48, 48, 48, 48)
     cnn_kernels: Layers = (3, 3, 3, 3)
     cnn_strides: Layers = (2, 2, 2, 2)
-    actor_keys: str = r'realsense|tcp_height|object_detected'
-    actor_layers: Layers = (512, 512, 512)
-    critic_keys: str = r'.*'
-    critic_layers: Layers = (512, 512, 512)
+    actor_keys: str = r'image|tcp_height|object_detected'
+    actor_layers: Layers = (256, 256, 256)
+    critic_keys: str = r'rgbd|robotiq_2f85|model'
+    critic_layers: Layers = (256, 256, 256)
     ensemble_size: int = 2
 
     # Train
@@ -41,7 +41,7 @@ class Config(_Config):
     eval_every: int = 10_000
     train_after: int = 10_000
 
-    logdir: str = 'logdir/src_household_img2step'
+    logdir: str = 'logdir/src_household_img2step_tcaug_rgbd'
     task: str = 'src'
     action_space: str = 'discrete'
     num_envs: int = 16

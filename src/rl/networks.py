@@ -77,11 +77,14 @@ class Encoder(hk.Module):
         mlp_feat, cnn_feat, emb = [], [], []
         def concat(x): return jnp.concatenate(x, -1)
 
+        selected_keys = []
         for key, feat in sorted(obs.items()):
             if re.search(self.obs_keys, key):
+                selected_keys.append(key)
                 match feat.dtype:
                     case jnp.uint8: cnn_feat.append(feat)
                     case _: mlp_feat.append(jnp.atleast_1d(feat))
+        print(f'{self.name} selected keys: {selected_keys}')
         if mlp_feat:
             mlp_feat = concat(mlp_feat)
             emb.append(self._mlp(mlp_feat))

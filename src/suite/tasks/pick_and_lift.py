@@ -52,8 +52,8 @@ class PickAndLift(base.Task):
             self._prop = entities.HouseholdItem(item)
             self._prop.observables.enable_all()
             self._arena.add_free_entity(self._prop)
-        except Exception as exp:
-            raise EpisodeInitializationError from exp
+        except Exception as exc:
+            raise EpisodeInitializationError from exc
 
     def initialize_episode(self, physics, random_state):
         try:
@@ -70,8 +70,8 @@ class PickAndLift(base.Task):
             pos, _ = self._prop.get_pose(physics)
             physics.forward()
             self._prop_height = pos[2]
-        except Exception as exp:
-            raise EpisodeInitializationError from exp
+        except Exception as exc:
+            raise EpisodeInitializationError from exc
 
     def get_reward(self, physics):
         pos, _ = self._prop.get_pose(physics)
@@ -100,6 +100,5 @@ class PickAndLift(base.Task):
         self._task_observables['tcp_height'] = observable.Generic(height)
         for obs in self._task_observables.values():
             obs.enabled = True
-        # self._task_observables['realsense/image'].enabled = False
         self._gripper.observables.enable_all()
         self._prop.observables.enable_all()

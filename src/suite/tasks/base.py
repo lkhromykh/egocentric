@@ -8,6 +8,7 @@ from dm_env import specs
 from dm_control.composer import variation
 from dm_control.composer.task import Task as _Task
 from dm_control.manipulation.shared import workspaces
+from dm_control.composer.observation import observable
 from dm_control.composer.variation import noises, distributions
 from dm_control.utils import transformations
 
@@ -234,8 +235,33 @@ class Task(abc.ABC, _Task):
 
     def _build_observables(self):
         """Enable required observables."""
+        cam = self._camera.name
+        gripper = self._gripper.mjcf_model.model
+
         def noisy_cam(img, random_state):
             noise = random_state.randint(-25, 25, img.shape)
             img = np.clip(img + noise, 0, 255).astype(img.dtype)
             return img
-        self._task_observables['realsense/image'].corruptor = noisy_cam
+        self._task_observables[f'{cam}/image'].corruptor = noisy_cam
+
+        neareset, farthest = 0.01, 0.4
+        h, w = self.img_size
+        cam_id = f'{gripper}/{cam}'
+
+        def render(physics, depth):
+            return physics.render(
+                camera_id=cam_id,
+                height=h, width=w,
+                depth=depth
+            )
+
+        def rgbd(physics):
+            img = render(physics, False)
+            depth = render(physics, True)
+            depth = (depth - neareset) / (farthest - neareset)
+            depth = np.clip(depth, 0, 1)
+            depth = np.uint8(255 * depth)
+            return np.concatenate([img, depth[..., np.newaxis]], -1)
+
+        self._task_observables[f'{cam}/rgbd'] = observable.Generic(rgbd)
+
