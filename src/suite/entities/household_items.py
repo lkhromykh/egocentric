@@ -20,11 +20,7 @@ class HouseholdItem(composer.Entity):
         self._mjcf_model = mjcf.from_path(path)
         for m in self._mjcf_model.find_all('mesh'):
             m.scale = scale
-        geom = filter(
-            lambda g: g.conaffinity == 0,
-            self._mjcf_model.find_all('geom')
-        )
-        self.geom = next(geom)
+        self.body = self._mjcf_model.find('body', 'model')
 
     def _build_observables(self):
         return ItemObservables(self)
@@ -42,4 +38,4 @@ class ItemObservables(composer.Observables):
 
     @composer.observable
     def pos(self):
-        return observable.MJCFFeature('xpos', self._entity.geom)
+        return observable.MJCFFeature('xipos', self._entity.body)

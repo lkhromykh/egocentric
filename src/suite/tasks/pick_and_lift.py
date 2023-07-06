@@ -11,8 +11,10 @@ from src.suite import entities
 from src.suite import common
 from src.suite.tasks import base
 
+with open(os.path.join(os.path.dirname(__file__), 'banlist')) as f:
+    _banlist = f.read().splitlines()
 _ITEMS = os.listdir(entities.HouseholdItem.DATA_DIR)
-_ITEMS.remove('Seagate_1TB_Backup_Plus_portable_drive_for_Mac')
+_ITEMS = list(set(_ITEMS) - set(_banlist))
 
 
 class Box(entities.BoxWithVertexSites):
@@ -67,22 +69,24 @@ class PickAndLift(base.Task):
             )
             prop_placer(physics, random_state)
             super().initialize_episode(physics, random_state)
-            pos, _ = self._prop.get_pose(physics)
             physics.forward()
-            self._prop_height = pos[2]
+            self._prop_height = self._prop_com_height(physics)
         except Exception as exc:
             raise EpisodeInitializationError from exc
 
     def get_reward(self, physics):
-        pos, _ = self._prop.get_pose(physics)
-        height = pos[2] - self._prop_height
+        diff = self._prop_com_height(physics) - self._prop_height
         return rewards.tolerance(
-            height,
+            diff,
             bounds=(self.MARGIN, float('inf')),
             margin=self.MARGIN,
             value_at_margin=0.,
             sigmoid='linear'
         )
+
+    def _prop_com_height(self, physics):
+        prop = physics.bind(self._prop.body)
+        return prop.xipos[2]
 
     def _build_observables(self):
         super()._build_observables()
@@ -98,11 +102,7 @@ class PickAndLift(base.Task):
             pos, _ = self._get_mocap(physics)
             return pos[-1:]
 
-        def h_corruptor(val, random_state):
-            noise = random_state.uniform(-0.01, 0.01)
-            return val + noise
         tcp_height = observable.Generic(height)
-        tcp_height.corruptor = h_corruptor
         self._task_observables['tcp_height'] = tcp_height
         for obs in self._task_observables.values():
             obs.enabled = True

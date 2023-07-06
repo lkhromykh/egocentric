@@ -70,7 +70,7 @@ class WorkSpace(NamedTuple):
                 lower=np.float32([-x, -y, l]),
                 upper=np.float32([x, y, h])
             )
-        return cls(box_fn(0.1, 0.1), box_fn(low, high))
+        return cls(box_fn(0.05, 0.05), box_fn(low, high))
 
 
 _DEFAULT_WORKSPACE = WorkSpace.from_halfsizes()
@@ -118,7 +118,7 @@ class Task(abc.ABC, _Task):
     def initialize_episode(self, physics, random_state):
         self._physics_variation.apply_variations(physics, random_state)
         pos = random_state.uniform(
-            self.workspace.tcp_box.lower + np.array([0, 0, .1]),
+            self.workspace.tcp_box.lower + np.array([0, 0, .05]),
             self.workspace.tcp_box.upper
         )
         self._set_mocap(physics, pos, common.DOWN_QUATERNION)
