@@ -1,6 +1,5 @@
 import os
 
-import numpy as np
 from dm_control.composer import initializers
 from dm_control.composer.observation import observable
 from dm_control.composer.environment import EpisodeInitializationError
@@ -11,6 +10,11 @@ from dm_control.manipulation.shared import workspaces
 from src.suite import entities
 from src.suite import common
 from src.suite.tasks import base
+
+with open(os.path.join(os.path.dirname(__file__), 'banlist')) as f:
+    _banlist = f.read().splitlines()
+_ITEMS = os.listdir(entities.HouseholdItem.DATA_DIR)
+_ITEMS = list(set(_ITEMS) - set(_banlist))
 
 
 class Box(entities.BoxWithVertexSites):
@@ -49,20 +53,18 @@ class PickAndLift(base.Task):
     def initialize_episode_mjcf(self, random_state):
         try:
             super().initialize_episode_mjcf(random_state)
-            # items = os.listdir(entities.HouseholdItem.DATA_DIR)
-            # item = random_state.choice(items)
+            # item = random_state.choice(_ITEMS)
             self._prop.detach()
             # self._prop = entities.HouseholdItem(item)
             self._prop = Box(
-                half_lengths=tuple(random_state.uniform(0.01, .03, 3)),
-                mass=random_state.uniform(0.1, 1.),
+                half_lengths=common.BOX_SIZE,
+                mass=common.BOX_MASS,
             )
-            rgba = np.concatenate([random_state.uniform(0, 1., 3), [1]])
-            self._prop.geom.rgba = rgba
+            self._prop.geom.rgba = '1 0 0 1'
             self._prop.observables.enable_all()
             self._arena.add_free_entity(self._prop)
-        except Exception as exp:
-            raise EpisodeInitializationError(exp) from exp
+        except Exception as exc:
+            raise EpisodeInitializationError from exc
 
     def initialize_episode(self, physics, random_state):
         try:
@@ -76,29 +78,33 @@ class PickAndLift(base.Task):
             )
             prop_placer(physics, random_state)
             super().initialize_episode(physics, random_state)
-            pos, _ = self._prop.get_pose(physics)
             physics.forward()
-            self._prop_height = pos[2]
-        except Exception as exp:
-            raise EpisodeInitializationError(self._prop.item_name) from exp
+            self._prop_height = self._prop_com_height(physics)
+        except Exception as exc:
+            raise EpisodeInitializationError from exc
 
     def get_reward(self, physics):
-        pos, _ = self._prop.get_pose(physics)
-        height = pos[2] - self._prop_height
+        diff = self._prop_com_height(physics) - self._prop_height
         return rewards.tolerance(
-            height,
+            diff,
             bounds=(self.MARGIN, float('inf')),
             margin=self.MARGIN,
             value_at_margin=0.,
             sigmoid='linear'
         )
 
+    def _prop_com_height(self, physics):
+        return physics.bind(self._prop.geom).xpos[2]
+        prop = physics.bind(self._prop.body)
+        return prop.xipos[2]
+
     def _build_observables(self):
         super()._build_observables()
 
         def distance(physics):
             tcp_pos = physics.bind(self._gripper.tool_center_point).xpos
-            obj_pos, _ = self._prop.get_pose(physics)
+            obj_pos = physics.bind(self._prop.geom).xpos
+            # obj_pos = physics.bind(self._prop.body).xipos
             return obj_pos - tcp_pos
         self._task_observables[f'{self._prop.mjcf_model.model}/distance'] =\
             observable.Generic(distance)
@@ -106,9 +112,13 @@ class PickAndLift(base.Task):
         def height(physics):
             pos, _ = self._get_mocap(physics)
             return pos[-1:]
-        self._task_observables['tcp_height'] = observable.Generic(height)
+
+        tcp_height = observable.Generic(height)
+        self._task_observables['tcp_height'] = tcp_height
         for obs in self._task_observables.values():
             obs.enabled = True
-        # self._task_observables['realsense/image'].enabled = False
         self._gripper.observables.enable_all()
         self._prop.observables.enable_all()
+
+    def _build_variations(self):
+        pass

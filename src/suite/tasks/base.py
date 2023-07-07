@@ -8,6 +8,7 @@ from dm_env import specs
 from dm_control.composer import variation
 from dm_control.composer.task import Task as _Task
 from dm_control.manipulation.shared import workspaces
+from dm_control.composer.observation import observable
 from dm_control.composer.variation import noises, distributions
 from dm_control.utils import transformations
 
@@ -27,8 +28,8 @@ class DiscreteActions(IntEnum):
     DOWN = 5
     CLOSE = 6
     OPEN = 7
-    # ROLL_CW = 8
-    # ROLL_CCW = 9
+    ROLL_CW = 8
+    ROLL_CCW = 9
 
     @staticmethod
     def as_array(action: int, dtype=np.float32) -> common.Array:
@@ -69,7 +70,7 @@ class WorkSpace(NamedTuple):
                 lower=np.float32([-x, -y, l]),
                 upper=np.float32([x, y, h])
             )
-        return cls(box_fn(0.1, 0.1), box_fn(low, high))
+        return cls(box_fn(0.05, 0.05), box_fn(low, high))
 
 
 _DEFAULT_WORKSPACE = WorkSpace.from_halfsizes()
@@ -127,11 +128,15 @@ class Task(abc.ABC, _Task):
             action = np.clip(action, -1, 1)
         pos, grip, rot = map(np.squeeze, np.split(action, [3, 4]))
         mocap_pos, mocap_quat = self._get_mocap(physics)
-        # rot = common.ROT_LIMIT * np.array([0, 0, rot])
-        # rot = transformations.euler_to_quat(rot)
+        if rot.size and rot:
+            rot = common.ROT_LIMIT * np.array([0, 0, rot])
+            rot = transformations.euler_to_quat(rot)
+            quat = transformations.quat_mul(mocap_quat, rot)
+        else:
+            quat = None
         self._set_mocap(physics,
                         pos=mocap_pos + common.CTRL_LIMIT * pos,
-                        # quat=transformations.quat_mul(mocap_quat, rot)
+                        quat=quat
                         )
         if grip:
             self._gripper.set_grasp(physics, float(grip > 0.))
@@ -217,8 +222,32 @@ class Task(abc.ABC, _Task):
 
     def _build_observables(self):
         """Enable required observables."""
+        cam = self._camera.name
+        gripper = self._gripper.mjcf_model.model
+
         def noisy_cam(img, random_state):
             noise = random_state.randint(-25, 25, img.shape)
             img = np.clip(img + noise, 0, 255).astype(img.dtype)
             return img
-        self._task_observables['realsense/image'].corruptor = noisy_cam
+        self._task_observables[f'{cam}/image'].corruptor = noisy_cam
+
+        neareset, farthest = 0.01, 0.4
+        h, w = self.img_size
+        cam_id = f'{gripper}/{cam}'
+
+        def render(physics, depth):
+            return physics.render(
+                camera_id=cam_id,
+                height=h, width=w,
+                depth=depth
+            )
+
+        def rgbd(physics):
+            img = render(physics, False)
+            depth = render(physics, True)
+            depth = (depth - neareset) / (farthest - neareset)
+            depth = np.clip(depth, 0, 1)
+            depth = np.uint8(255 * depth)
+            return np.concatenate([img, depth[..., np.newaxis]], -1)
+
+        # self._task_observables[f'{cam}/rgbd'] = observable.Generic(rgbd)
