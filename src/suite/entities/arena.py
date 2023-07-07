@@ -35,7 +35,7 @@ class Arena(Entity):
             rgb2=(.5, .5, .5),
             mark='random',
             markrgb='1 1 1',
-            random=0.01,
+            random=0.,
             width=300,
             height=300
         )

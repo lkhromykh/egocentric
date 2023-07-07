@@ -117,10 +117,7 @@ class Task(abc.ABC, _Task):
 
     def initialize_episode(self, physics, random_state):
         self._physics_variation.apply_variations(physics, random_state)
-        pos = random_state.uniform(
-            self.workspace.tcp_box.lower + np.array([0, 0, .05]),
-            self.workspace.tcp_box.upper
-        )
+        pos = self.workspace.tcp_box.sample(random_state)
         self._set_mocap(physics, pos, common.DOWN_QUATERNION)
         self._gripper.set_pose(physics, pos, common.DOWN_QUATERNION)
 
@@ -195,7 +192,7 @@ class Task(abc.ABC, _Task):
             self._mjcf_variation.bind_attributes(
                 light,
                 pos=noises.Additive(uni(-.6, .6)),
-                diffuse=eq_noise(.05, .7),
+                diffuse=eq_noise(.1, .7),
                 specular=eq_noise(.05, .3),
                 ambient=eq_noise(.05, .5)
             )
@@ -253,5 +250,4 @@ class Task(abc.ABC, _Task):
             depth = np.uint8(255 * depth)
             return np.concatenate([img, depth[..., np.newaxis]], -1)
 
-        self._task_observables[f'{cam}/rgbd'] = observable.Generic(rgbd)
-
+        # self._task_observables[f'{cam}/rgbd'] = observable.Generic(rgbd)

@@ -76,7 +76,6 @@ class Encoder(hk.Module):
     def __call__(self, obs: types.Observation) -> Array:
         mlp_feat, cnn_feat, emb = [], [], []
         def concat(x): return jnp.concatenate(x, -1)
-
         selected_keys = []
         for key, feat in sorted(obs.items()):
             if re.search(self.obs_keys, key):
