@@ -108,3 +108,6 @@ class PickAndLift(base.Task):
             obs.enabled = True
         self._gripper.observables.enable_all()
         self._prop.observables.enable_all()
+
+    def _build_variations(self):
+        pass
