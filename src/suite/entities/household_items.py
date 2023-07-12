@@ -50,9 +50,9 @@ class ItemObservables(composer.Observables):
     def aabb(self):
         def aabb(physics):
             coords = physics.bind(self._entity.geoms).aabb
-            center, half_size = np.split(coords, 2, -1)
-            high = np.max(center + half_size, 0)
-            low = np.min(center - half_size, 0)
+            center, half_sizes = np.split(coords, 2, -1)
+            high = np.max(center + half_sizes, 0)
+            low = np.min(center - half_sizes, 0)
             return np.concatenate([low, high])
 
         return observable.Generic(aabb)

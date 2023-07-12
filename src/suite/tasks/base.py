@@ -19,7 +19,7 @@ ActionMode = Literal['discrete', 'continuous']
 
 
 class DiscreteActions(IntEnum):
-
+    # In a such way left-handed coordinate system occurs.
     FORWARD = 0
     BACKWARD = 1
     RIGHT = 2
@@ -250,4 +250,4 @@ class Task(abc.ABC, _Task):
             depth = np.uint8(255 * depth)
             return np.concatenate([img, depth[..., np.newaxis]], -1)
 
-        self._task_observables[f'{cam}/rgbd'] = observable.Generic(rgbd)
+        # self._task_observables[f'{cam}/rgbd'] = observable.Generic(rgbd)
