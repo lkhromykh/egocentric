@@ -29,8 +29,8 @@ class Config(_Config):
     # Train
     jit: bool = True
     buffer_capacity: int = 10 ** 5
-    batch_size: int = 512
-    sequence_len: int = 2
+    batch_size: int = 256
+    sequence_len: int = 4
     utd: float = .1
     learning_rate: float = 3e-4
     init_temperature: float = 1e-3
@@ -41,7 +41,7 @@ class Config(_Config):
     eval_every: int = 10_000
     train_after: int = 5_000
 
-    logdir: str = 'logdir/src_household_img2step_nodr_norgbd_banlist'
+    logdir: str = 'logdir/src_household_img4step_nodr_norgbd_banlist'
     task: str = 'src'
     action_space: str = 'discrete'
     num_envs: int = 16

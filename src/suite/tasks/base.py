@@ -60,7 +60,7 @@ class WorkSpace(NamedTuple):
     @classmethod
     def from_halfsizes(cls,
                        half_sizes: tuple[float, float] = (.1, .1),
-                       tcp_height: tuple[float, float] = (.17, .4)
+                       tcp_height: tuple[float, float] = (.16, .4)
                        ) -> 'WorkSpace':
         x, y = half_sizes
         low, high = tcp_height

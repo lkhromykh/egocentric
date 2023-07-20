@@ -59,7 +59,7 @@ class PickAndLift(base.Task):
 
     def initialize_episode(self, physics, random_state):
         try:
-            super().initialize_episode(physics, random_state)
+            self._gripper.set_pose(physics, self.workspace.tcp_box.upper)
             prop_placer = initializers.PropPlacer(
                 props=[self._prop],
                 position=distributions.Uniform(*self.workspace.prop_box),
@@ -68,6 +68,7 @@ class PickAndLift(base.Task):
                 settle_physics=True,
             )
             prop_placer(physics, random_state)
+            super().initialize_episode(physics, random_state)
             physics.forward()
             self._prop_height = self._prop_com_height(physics)
         except Exception as exc:
