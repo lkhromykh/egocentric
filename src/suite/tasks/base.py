@@ -216,8 +216,8 @@ class Task(abc.ABC, _Task):
         self._mjcf_variation.bind_attributes(
             self._camera,
             pos=noises.Additive(uni(-0.01, 0.01)),
-            quat=noises.Additive(uni(-0.03, 0.03)),
-            fovy=noises.Additive(uni(-10, 10))
+            quat=noises.Additive(uni(-0.025, 0.025)),
+            fovy=noises.Additive(uni(-8, 8))
         )
 
     def _build_observables(self):

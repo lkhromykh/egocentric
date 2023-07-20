@@ -20,7 +20,7 @@ _out_w_init = hk.initializers.TruncatedNormal(stddev=1e-3)
 class TransformedDistribution(tfd.TransformedDistribution):
 
     def log_prob(self, event):
-        threshold = .9999
+        threshold = .99999
         event = jnp.clip(event, -threshold, threshold)
         return super().log_prob(event)
 
@@ -189,7 +189,6 @@ class CriticsEnsemble(hk.Module):
 
 
 class Networks(NamedTuple):
-
     init: Callable
     actor: Callable
     critic: Callable

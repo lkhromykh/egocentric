@@ -16,9 +16,8 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
     def tree_slice(t, sl): return jax.tree_util.tree_map(lambda x: x[sl], t)
 
     def cross_entropy(q_values, log_probs, temperature):
-        tempered_q_values = q_values / temperature
+        tempered_q_values = sg(q_values / temperature)
         normalized_weights = jax.nn.softmax(tempered_q_values, axis=0)
-        normalized_weights = sg(normalized_weights)
         return -jnp.sum(normalized_weights * log_probs, axis=0)
 
     def loss_fn(
@@ -34,14 +33,6 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
         # time major arrays are expected [TIME, BATCH, ...].
         chex.assert_tree_shape_prefix(obs_t, (cfg.sequence_len + 1, cfg.batch_size))
         chex.assert_tree_shape_prefix(a_t, (cfg.sequence_len, cfg.batch_size))
-
-        target_obs_t = obs_t.copy()
-        # tc_aug = jax.vmap(ops.augmentation_fn, in_axes=(None, 0, None))
-        # for key, val in obs_t.items():
-        #     if val.dtype == jnp.uint8:
-        #         rng, k1, k2 = jax.random.split(rng, 3)
-        #         target_obs_t[key] = tc_aug(k1, val, 4)
-        #         obs_t[key] = tc_aug(k2, val, 4)
 
         policy_t = nets.actor(params, obs_t)
         log_pi_t = policy_t[:-1].log_prob(a_t)
@@ -62,13 +53,12 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
                         seed=rng, sample_shape=(cfg.num_actions,)
                     )
             case _: raise ValueError(cfg.action_space)
-        obs_tTm1, target_obs_tTm1 = tree_slice(
-            (obs_t, target_obs_t), jnp.s_[:-1])
+        obs_tTm1 = tree_slice(obs_t, jnp.s_[:-1])
         q_t = nets.critic(params, obs_tTm1, a_t)
-        target_q_t = nets.critic(target_params, target_obs_tTm1, a_t)
+        target_q_t = nets.critic(target_params, obs_tTm1, a_t)
         target_q_dash_t = jax.vmap(
             nets.critic, in_axes=(None, None, 0))(
-            target_params, target_obs_t, pi_a_dash_t)
+            target_params, obs_t, pi_a_dash_t)
         match cfg.action_space:
             case 'discrete':
                 prob_t = jnp.exp(log_pi_dash_t)

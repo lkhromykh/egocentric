@@ -41,7 +41,7 @@ class Config(_Config):
     eval_every: int = 10_000
     train_after: int = 5_000
 
-    logdir: str = 'logdir/src_household_img2step_norgbd_dr'
+    logdir: str = 'logdir/src_household_img2step_nodr_norgbd_banlist'
     task: str = 'src'
     action_space: str = 'discrete'
     num_envs: int = 16

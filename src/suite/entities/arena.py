@@ -96,7 +96,7 @@ class Arena(Entity):
             body1=self._mocap,
             body2=body,
             relpose=relpose,
-            solref='0.02 1'
+            solref='0.01 1'
         )
 
     @property

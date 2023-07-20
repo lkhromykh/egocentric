@@ -1,6 +1,4 @@
-import os
 import time
-# os.environ['XLA_PYTHON_PREALLOCATE'] = 'false'
 
 import cloudpickle
 import numpy as np

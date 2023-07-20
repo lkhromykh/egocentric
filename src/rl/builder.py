@@ -19,7 +19,6 @@ from src.rl import types_ as types
 
 
 class Builder:
-
     PARAMS = 'params.pkl'
     STATE = 'state.cpkl'
     CONFIG = 'config.yaml'
@@ -53,7 +52,7 @@ class Builder:
                         action_mode=c.action_space,
                         img_size=(128, 128),
                         control_timestep=.05,
-                        time_limit=3.,
+                        time_limit=4.,
                     ))
             case 'ur', _:
                 from ur_env.remote import RemoteEnvClient
