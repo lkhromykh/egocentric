@@ -93,7 +93,7 @@ class PickAndLift(base.Task):
 
         def distance(physics):
             tcp_pos = physics.bind(self._gripper.tool_center_point).xpos
-            obj_pos, _ = self._prop.get_pose(physics)
+            obj_pos = physics.bind(self._prop.body).xipos
             return obj_pos - tcp_pos
         self._task_observables[f'{self._prop.mjcf_model.model}/distance'] =\
             observable.Generic(distance)

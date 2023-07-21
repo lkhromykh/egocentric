@@ -216,8 +216,8 @@ class Task(abc.ABC, _Task):
         self._mjcf_variation.bind_attributes(
             self._camera,
             pos=noises.Additive(uni(-0.01, 0.01)),
-            quat=noises.Additive(uni(-0.025, 0.025)),
-            fovy=noises.Additive(uni(-8, 8))
+            quat=noises.Additive(uni(-0.03, 0.03)),
+            fovy=noises.Additive(uni(-10, 10))
         )
 
     def _build_observables(self):
@@ -226,7 +226,7 @@ class Task(abc.ABC, _Task):
         gripper = self._gripper.mjcf_model.model
 
         def noisy_cam(img, random_state):
-            noise = random_state.randint(-25, 25, img.shape)
+            noise = random_state.randint(-10, 10, img.shape)
             img = np.clip(img + noise, 0, 255).astype(img.dtype)
             return img
         self._task_observables[f'{cam}/image'].corruptor = noisy_cam

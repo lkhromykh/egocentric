@@ -50,9 +50,9 @@ class Builder:
                     return wrap(load(
                         seed,
                         action_mode=c.action_space,
-                        img_size=(128, 128),
+                        img_size=(96, 96),
                         control_timestep=.05,
-                        time_limit=3.,
+                        time_limit=4.,
                     ))
             case 'ur', _:
                 from ur_env.remote import RemoteEnvClient
