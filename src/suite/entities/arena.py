@@ -30,7 +30,7 @@ class Arena(Entity):
             'texture',
             name='groundplane',
             type='2d',
-            builtin='gradient',
+            builtin='flat',
             rgb1=(.4, .4, .4),
             rgb2=(.5, .5, .5),
             mark='random',

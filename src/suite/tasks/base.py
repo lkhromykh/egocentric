@@ -201,10 +201,10 @@ class Task(abc.ABC, _Task):
             self._arena.groundplane_texture,
             rgb1=uni(),
             rgb2=uni(),
-            builtin=distributions.UniformChoice(('gradient', 'checker', 'flat')),
+            # builtin=distributions.UniformChoice(('gradient', 'checker', 'flat')),
             mark='random',
             markrgb=uni(),
-            random=uni(0., .1),
+            random=uni(0., .05),
         )
         self._mjcf_variation.bind_attributes(
             self._arena.groundplane_material,
@@ -217,7 +217,7 @@ class Task(abc.ABC, _Task):
             self._camera,
             pos=noises.Additive(uni(-0.01, 0.01)),
             quat=noises.Additive(uni(-0.03, 0.03)),
-            fovy=noises.Additive(uni(-10, 10))
+            fovy=noises.Additive(uni(-8, 8))
         )
 
     def _build_observables(self):
