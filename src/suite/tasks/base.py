@@ -250,4 +250,4 @@ class Task(abc.ABC, _Task):
             depth = np.uint8(255 * depth)
             return np.concatenate([img, depth[..., np.newaxis]], -1)
 
-        # self._task_observables[f'{cam}/rgbd'] = observable.Generic(rgbd)
+        self._task_observables[f'{cam}/rgbd'] = observable.Generic(rgbd)

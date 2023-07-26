@@ -50,6 +50,7 @@ class PickAndLift(base.Task):
         try:
             super().initialize_episode_mjcf(random_state)
             item = random_state.choice(_ITEMS)
+            item = 'Nestle_Carnation_Cinnamon_Coffeecake_Kit_1913OZ'
             self._prop.detach()
             self._prop = entities.HouseholdItem(item)
             self._prop.observables.enable_all()
