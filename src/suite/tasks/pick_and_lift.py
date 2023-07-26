@@ -15,6 +15,7 @@ with open(os.path.join(os.path.dirname(__file__), 'banlist')) as f:
     _banlist = f.read().splitlines()
 _ITEMS = os.listdir(entities.HouseholdItem.DATA_DIR)
 _ITEMS = list(set(_ITEMS) - set(_banlist))
+_ITEMS = _ITEMS[:10]
 
 
 class Box(entities.BoxWithVertexSites):
@@ -50,7 +51,6 @@ class PickAndLift(base.Task):
         try:
             super().initialize_episode_mjcf(random_state)
             item = random_state.choice(_ITEMS)
-            item = 'Nestle_Carnation_Cinnamon_Coffeecake_Kit_1913OZ'
             self._prop.detach()
             self._prop = entities.HouseholdItem(item)
             self._prop.observables.enable_all()
