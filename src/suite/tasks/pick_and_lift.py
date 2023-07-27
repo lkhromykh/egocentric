@@ -15,7 +15,16 @@ with open(os.path.join(os.path.dirname(__file__), 'banlist')) as f:
     _banlist = f.read().splitlines()
 _ITEMS = os.listdir(entities.HouseholdItem.DATA_DIR)
 _ITEMS = list(set(_ITEMS) - set(_banlist))
-_ITEMS = _ITEMS[:10]
+_ITEMS = [
+    'Nestle_Skinny_Cow_Dreamy_Clusters_Candy_Dark_Chocolate_6_pack_1_oz_pouches',
+    'Office_Depot_Canon_PG21XL_Remanufactured_Ink_Cartridge_Black',
+    'U_By_Kotex_Sleek_Regular_Unscented_Tampons_36_Ct_Box',
+    'Epson_Ink_Cartridge_126_Yellow',
+    'Office_Depot_HP_61Tricolor_Ink_Cartridge',
+    'Sonicare_2_Series_Toothbrush_Plaque_Control',
+    'Tune_Belt_Sport_Armband_For_Samsung_Galaxy_S3',
+    'Marc_Anthony_True_Professional_Oil_of_Morocco_Argan_Oil_Treatment',
+]
 
 
 class Box(entities.BoxWithVertexSites):
@@ -52,7 +61,7 @@ class PickAndLift(base.Task):
             super().initialize_episode_mjcf(random_state)
             item = random_state.choice(_ITEMS)
             self._prop.detach()
-            self._prop = entities.HouseholdItem(item)
+            self._prop = entities.HouseholdItem(item, rgb='1 1 1')
             self._prop.observables.enable_all()
             self._arena.add_free_entity(self._prop)
         except Exception as exc:
@@ -109,3 +118,6 @@ class PickAndLift(base.Task):
             obs.enabled = True
         self._gripper.observables.enable_all()
         self._prop.observables.enable_all()
+
+    # def _build_variations(self):
+    #     pass

@@ -59,7 +59,7 @@ class WorkSpace(NamedTuple):
 
     @classmethod
     def from_halfsizes(cls,
-                       half_sizes: tuple[float, float] = (.1, .1),
+                       half_sizes: tuple[float, float] = (.08, .08),
                        tcp_height: tuple[float, float] = (.16, .4)
                        ) -> 'WorkSpace':
         x, y = half_sizes
@@ -250,4 +250,4 @@ class Task(abc.ABC, _Task):
             depth = np.uint8(255 * depth)
             return np.concatenate([img, depth[..., np.newaxis]], -1)
 
-        self._task_observables[f'{cam}/rgbd'] = observable.Generic(rgbd)
+        # self._task_observables[f'{cam}/rgbd'] = observable.Generic(rgbd)
