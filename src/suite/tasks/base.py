@@ -52,25 +52,30 @@ class BoundingBox(NamedTuple):
         return (self.upper + self.lower) / 2
 
 
-class WorkSpace(NamedTuple):
+_XY = tuple[float, float]
 
+
+class WorkSpace(NamedTuple):
     prop_box: BoundingBox
     tcp_box: BoundingBox
+    tcp_init: BoundingBox
 
     @classmethod
     def from_halfsizes(cls,
-                       half_sizes: tuple[float, float] = (.08, .08),
-                       tcp_height: tuple[float, float] = (.16, .4)
+                       half_sizes: _XY = (.08, .08),
+                       tcp_bbox_height: _XY = (.16, .4),
+                       tcp_init_height: _XY = (.3, .4)
                        ) -> 'WorkSpace':
         x, y = half_sizes
-        low, high = tcp_height
+        blow, bhigh = tcp_bbox_height
+        ilow, ihigh = tcp_init_height
 
         def box_fn(l, h):
             return BoundingBox(
                 lower=np.float32([-x, -y, l]),
                 upper=np.float32([x, y, h])
             )
-        return cls(box_fn(0.05, 0.05), box_fn(low, high))
+        return cls(box_fn(0.05, 0.05), box_fn(blow, bhigh), box_fn(ilow, ihigh))
 
 
 _DEFAULT_WORKSPACE = WorkSpace.from_halfsizes()
@@ -117,7 +122,7 @@ class Task(abc.ABC, _Task):
 
     def initialize_episode(self, physics, random_state):
         self._physics_variation.apply_variations(physics, random_state)
-        pos = self.workspace.tcp_box.sample(random_state)
+        pos = self.workspace.tcp_init.sample(random_state)
         self._set_mocap(physics, pos, common.DOWN_QUATERNION)
         self._gripper.set_pose(physics, pos, common.DOWN_QUATERNION)
 
