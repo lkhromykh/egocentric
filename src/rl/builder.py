@@ -51,8 +51,8 @@ class Builder:
                         seed,
                         action_mode=c.action_space,
                         img_size=(96, 96),
-                        control_timestep=.1,
-                        time_limit=6.,
+                        control_timestep=.05,
+                        time_limit=3.,
                     ))
             case 'ur', _:
                 from ur_env.remote import RemoteEnvClient

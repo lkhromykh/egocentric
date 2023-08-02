@@ -159,8 +159,9 @@ class Critic(hk.Module):
                  state: Array,
                  action: Array,
                  ) -> Array:
+        state = MLP(self.layers[:1], 'tanh', 'layer')(state)
         x = jnp.concatenate([state, action.astype(state.dtype)], -1)
-        x = MLP(self.layers, self.act, self.norm)(x)
+        x = MLP(self.layers[1:], self.act, self.norm)(x)
         return hk.Linear(1)(x)
 
 
