@@ -16,10 +16,10 @@ class Config(_Config):
     activation: str = 'elu'
     normalization: str = 'layer'
     asymmetric: bool = True
-    mlp_layers: Layers = (256,)
+    mlp_layers: Layers = (512,)
     cnn_depths: Layers = (64, 64, 64, 64)
     cnn_kernels: Layers = (3, 3, 3, 3)
-    cnn_strides: Layers = (2, 2, 2, 2)
+    cnn_strides: Layers = (2, 1, 1, 1)
     actor_keys: str = r'image|tcp_height|object_detected'
     actor_layers: Layers = (512, 512)
     critic_keys: str = r'rgbd|robotiq_2f85|model|box'
@@ -41,10 +41,10 @@ class Config(_Config):
     eval_every: int = 10_000
     train_after: int = 10_000
 
-    logdir: str = 'logdir/src_household_img2step_nodr_norgbd_boxes_red_ln'
+    logdir: str = 'logdir/src_household_img2step_nodr_norgbd_boxes_red_ln_big'
     task: str = 'src'
     action_space: str = 'discrete'
-    num_envs: int = 16
+    num_envs: int = 8
     seed: int = 0
 
 
