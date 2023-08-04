@@ -69,7 +69,7 @@ class PickAndLift(base.Task):
             item = random_state.choice(_ITEMS)
             self._prop.detach()
             self._prop = entities.HouseholdItem(item,
-                                                scale='.3 .3 .3',
+                                                scale='.5 .5 .5',
                                                 rgb='1 0 0')
             self._prop.observables.enable_all()
             self._arena.add_free_entity(self._prop)
@@ -125,6 +125,7 @@ class PickAndLift(base.Task):
         self._task_observables['tcp_height'] = tcp_height
         for obs in self._task_observables.values():
             obs.enabled = True
+        self._task_observables['realsense/image'].enabled = False
         self._gripper.observables.enable_all()
         self._prop.observables.enable_all()
 
