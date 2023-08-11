@@ -20,7 +20,7 @@ class Config(_Config):
     cnn_depths: Layers = (64, 64, 64, 64)
     cnn_kernels: Layers = (3, 3, 3, 3)
     cnn_strides: Layers = (2, 2, 2, 2)
-    actor_keys: str = r'rgbd|tcp_height|object_detected'
+    actor_keys: str = r'rgbd|tcp_height|robotiq_2f85'
     actor_layers: Layers = (512, 512)
     critic_keys: str = r'robotiq_2f85|model|box'
     critic_layers: Layers = (512, 512)
@@ -41,10 +41,10 @@ class Config(_Config):
     eval_every: int = 10_000
     train_after: int = 10_000
 
-    logdir: str = 'logdir/src_household_img2step_nodr_argbd_boxes_red_ln'
+    logdir: str = 'logdir/src_household_img2step_nodr_argbd_boxes_textures_wgripperobs'
     task: str = 'src'
     action_space: str = 'discrete'
-    num_envs: int = 8
+    num_envs: int = 16
     seed: int = 0
 
 
