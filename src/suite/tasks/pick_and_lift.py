@@ -23,14 +23,15 @@ BOXES = [
     'Office_Depot_HP_61Tricolor_Ink_Cartridge',
     'Sonicare_2_Series_Toothbrush_Plaque_Control',
     'Tune_Belt_Sport_Armband_For_Samsung_Galaxy_S3',
-    'Marc_Anthony_True_Professional_Oil_of_Morocco_Argan_Oil_Treatment',
-    'Hasbro_Life_Board_Game',
-    'Winning_Moves_1180_Aggravation_Board_Game',
-    'Crayola_Washable_Sidewalk_Chalk_16_pack',
-    'Dell_Ink_Cartridge_Yellow_31',
-    'Perricone_MD_Chia_Serum',
-    'Asus_Z97IPLUS_Motherboard_Mini_ITX_LGA1150_Socket'
 ]
+    # 'Marc_Anthony_True_Professional_Oil_of_Morocco_Argan_Oil_Treatment',
+    # 'Hasbro_Life_Board_Game',
+    # 'Winning_Moves_1180_Aggravation_Board_Game',
+    # 'Crayola_Washable_Sidewalk_Chalk_16_pack',
+    # 'Dell_Ink_Cartridge_Yellow_31',
+    # 'Perricone_MD_Chia_Serum',
+    # 'Asus_Z97IPLUS_Motherboard_Mini_ITX_LGA1150_Socket'
+# ]
 _ITEMS = BOXES
 
 

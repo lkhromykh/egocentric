@@ -23,7 +23,7 @@ class Robotiq2f85(composer.Entity):
         self._tcp_site = self._base.add(
             'site',
             name='tcp_center_point',
-            pos=[0, 0, .1493],
+            pos=[0, 0, .1269],
             group=common.MOCAP_SITE_GROUP
         )
         black = self._mjcf_model.find('material', 'black')

@@ -20,6 +20,8 @@ ActionMode = Literal['discrete', 'continuous']
 
 class DiscreteActions(IntEnum):
     # In a such way left-handed coordinate system occurs.
+    # Also naming doesn't account for rotations
+    #   which can turn everything upside down.
     FORWARD = 0
     BACKWARD = 1
     RIGHT = 2
@@ -232,8 +234,7 @@ class Task(abc.ABC, _Task):
 
         def noisy_cam(img, random_state):
             noise = random_state.randint(-10, 10, img.shape)
-            img = np.clip(img + noise, 0, 255).astype(img.dtype)
-            return img
+            return np.clip(img + noise, 0, 255).astype(img.dtype)
         self._task_observables[f'{cam}/image'].corruptor = noisy_cam
 
         neareset, farthest = 0.01, 0.4
@@ -255,4 +256,17 @@ class Task(abc.ABC, _Task):
             depth = np.uint8(255 * depth)
             return np.concatenate([img, depth[..., np.newaxis]], -1)
 
-        self._task_observables[f'{cam}/rgbd'] = observable.Generic(rgbd)
+        rgbd_obs = observable.Generic(rgbd)
+        rgbd_obs.corruptor = None #noisy_cam
+        self._task_observables[f'{cam}/rgbd'] = rgbd_obs
+
+        from src.suite.transformations import rv2rpy
+        def tcp_pose(physics):  # origin should also be adjusted
+            tcp = physics.bind(self._gripper.tool_center_point)
+            pos = tcp.xpos
+            mat = tcp.xmat.reshape((3, 3))
+            rv = transformations.rmat_to_euler(mat, 'XYZ')
+            rpy = rv2rpy(rv)
+            return np.concatenate([pos, rpy])
+        self._task_observables['tcp_pose'] = observable.Generic(tcp_pose)
+
