@@ -204,9 +204,9 @@ class Task(abc.ABC, _Task):
             self._mjcf_variation.bind_attributes(
                 light,
                 pos=noises.Additive(uni(-.6, .6)),
-                diffuse=eq_noise(.1, .7),
-                specular=eq_noise(.05, .3),
-                ambient=eq_noise(.05, .5)
+                diffuse=eq_noise(.2, .7),
+                specular=eq_noise(.1, .3),
+                ambient=eq_noise(.1, .5)
             )
 
         self._mjcf_variation.bind_attributes(

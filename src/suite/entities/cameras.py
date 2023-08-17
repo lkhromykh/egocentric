@@ -25,7 +25,7 @@ KINECT = CameraSpec(
 EGOCENTRIC_REALSENSE = CameraSpec(
     name='realsense',
     pos=(0., -.091, 0.),
-    quat=(0, 0, 0.99876, -0.0498),
+    quat=(.0498, .99876, 0, 0),
     fovy=59
 )
 
