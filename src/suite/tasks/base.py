@@ -11,9 +11,11 @@ from dm_control.manipulation.shared import workspaces
 from dm_control.composer.observation import observable
 from dm_control.composer.variation import noises, distributions
 from dm_control.utils import transformations
+from dm_control.rl.control import PhysicsError
 
 from src.suite import common
 from src.suite import entities
+from src.suite.transformations import rotm2axang2
 
 ActionMode = Literal['discrete', 'continuous']
 
@@ -129,24 +131,27 @@ class Task(abc.ABC, _Task):
         self._gripper.set_pose(physics, pos, common.DOWN_QUATERNION)
 
     def before_step(self, physics, action, random_state):
-        if self.action_mod == 'discrete':
-            action = DiscreteActions.as_array(action)
-        else:
-            action = np.clip(action, -1, 1)
-        pos, grip, rot = map(np.squeeze, np.split(action, [3, 4]))
-        mocap_pos, mocap_quat = self._get_mocap(physics)
-        if rot.size and rot:
-            rot = common.ROT_LIMIT * np.array([0, 0, rot])
-            rot = transformations.euler_to_quat(rot)
-            quat = transformations.quat_mul(mocap_quat, rot)
-        else:
-            quat = None
-        self._set_mocap(physics,
-                        pos=mocap_pos + common.CTRL_LIMIT * pos,
-                        quat=quat
-                        )
-        if grip:
-            self._gripper.set_grasp(physics, float(grip > 0.))
+        try:  # TODO: find out why BAD_CTRL occurs.
+            if self.action_mod == 'discrete':
+                action = DiscreteActions.as_array(action)
+            else:
+                action = np.clip(action, -1, 1)
+            pos, grip, rot = map(np.squeeze, np.split(action, [3, 4]))
+            mocap_pos, mocap_quat = self._get_mocap(physics)
+            if rot.size and rot:
+                rot = common.ROT_LIMIT * np.array([0, 0, rot])
+                rot = transformations.euler_to_quat(rot)
+                quat = transformations.quat_mul(mocap_quat, rot)
+            else:
+                quat = None
+            self._set_mocap(physics,
+                            pos=mocap_pos + common.CTRL_LIMIT * pos,
+                            quat=quat
+                            )
+            if grip:
+                self._gripper.set_grasp(physics, float(grip > 0.))
+        except Exception as exc:
+            raise PhysicsError from exc
 
     def action_spec(self, physics):
         num_values = len(DiscreteActions)
@@ -260,13 +265,11 @@ class Task(abc.ABC, _Task):
         rgbd_obs.corruptor = None #noisy_cam
         self._task_observables[f'{cam}/rgbd'] = rgbd_obs
 
-        from src.suite.transformations import rv2rpy
-        def tcp_pose(physics):  # origin should also be adjusted
+        def tcp_pose(physics):
             tcp = physics.bind(self._gripper.tool_center_point)
             pos = tcp.xpos
             mat = tcp.xmat.reshape((3, 3))
-            rv = transformations.rmat_to_euler(mat, 'XYZ')
-            rpy = rv2rpy(rv)
-            return np.concatenate([pos, rpy])
+            axang = rotm2axang2(mat)
+            return np.concatenate([pos, axang])
         self._task_observables['tcp_pose'] = observable.Generic(tcp_pose)
 

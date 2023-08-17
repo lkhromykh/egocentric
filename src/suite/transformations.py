@@ -2,7 +2,8 @@ import numpy as np
 
 cos = np.cos
 sin = np.sin
-_POLE_LIMIT = 1 - 1e-6
+_eps = 1e-6
+_POLE_LIMIT = 1 - _eps
 _RPOLE_LIMIT = np.pi / 2 * _POLE_LIMIT
 
 
@@ -60,3 +61,52 @@ def rmat2euler(mat):
     y = np.arcsin(mat[0, 2])
     x = -np.arctan2(mat[1, 2], mat[2, 2])
     return np.array([x, y, z])
+
+
+def rotm2axang1(mat):
+    tr = mat[0, 0] + mat[1, 1] + mat[2, 2]
+    if np.abs(tr - 3) < _eps:
+        return np.array([0, 0, 0.])
+    if np.abs(tr + 1) < _eps:
+        if mat[0, 0] > mat[1, 1] and mat[0, 0] > mat[2, 2]:
+            u = np.array([mat[0, 0] + 1, mat[0, 1], mat[0, 2]])
+        elif mat[1, 1] > mat[2, 2]:
+            u = np.array([mat[1, 0], mat[1, 1] + 1, mat[1, 2]])
+        else:
+            u = np.array([mat[2, 0], mat[2, 1], mat[2, 2] + 1])
+        u /= np.linalg.norm(u)
+        return np.pi * u
+
+    theta = np.arccos((tr - 1) / 2)
+    r = np.array([
+        mat[2, 1] - mat[1, 2],
+        mat[0, 2] - mat[2, 0],
+        mat[1, 0] - mat[0, 1]
+    ])
+    r /= 2 * np.sin(theta)
+    return theta * r
+
+
+def rotm2axang2(mat):
+    r = np.array([
+        mat[2, 1] - mat[1, 2],
+        mat[0, 2] - mat[2, 0],
+        mat[1, 0] - mat[0, 1]
+    ])
+    s = np.linalg.norm(r)
+    c = (mat[0, 0] + mat[1, 1] + mat[2, 2] - 1) / 2
+    if s < _eps and np.abs(c - 1) < _eps:
+        return np.array([0, 0, 0.])
+    if s < _eps and np.abs(c + 1) < _eps:
+        if mat[0, 0] > mat[1, 1] and mat[0, 0] > mat[2, 2]:
+            u = np.array([mat[0, 0] + 1, mat[0, 1], mat[0, 2]])
+        elif mat[1, 1] > mat[2, 2]:
+            u = np.array([mat[1, 0], mat[1, 1] + 1, mat[1, 2]])
+        else:
+            u = np.array([mat[2, 0], mat[2, 1], mat[2, 2] + 1])
+        u /= np.linalg.norm(u)
+        return np.pi * u
+    theta = np.arctan2(s, c)
+    if np.abs(np.sin(theta)) < _eps:
+        return np.zeros(3)
+    return theta * r / s

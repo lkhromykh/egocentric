@@ -62,8 +62,8 @@ class RobotiqObservables(composer.Observables):
         return observable.MJCFFeature('xpos', self._entity.tool_center_point)
 
     @composer.observable
-    def tcp_rmat(self):
-        return observable.MJCFFeature('xmat', self._entity.base_mount)
+    def tcp_quat(self):
+        return observable.MJCFFeature('xquat', self._entity.base_mount)
 
     @composer.observable
     def length(self):

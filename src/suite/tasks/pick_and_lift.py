@@ -70,7 +70,7 @@ class PickAndLift(base.Task):
             item = random_state.choice(_ITEMS)
             self._prop.detach()
             self._prop = entities.HouseholdItem(item,
-                                                scale='.3 .3 .3',
+                                                scale='.4 .4 .4',
                                                 rgb=None)
             self._prop.observables.enable_all()
             self._arena.add_free_entity(self._prop)
@@ -118,17 +118,11 @@ class PickAndLift(base.Task):
         self._task_observables[f'{self._prop.mjcf_model.model}/distance'] =\
             observable.Generic(distance)
 
-        def height(physics):
-            pos, _ = self._get_mocap(physics)
-            return pos[-1:]
-
-        tcp_height = observable.Generic(height)
-        self._task_observables['tcp_height'] = tcp_height
         for obs in self._task_observables.values():
             obs.enabled = True
-        self._task_observables['realsense/image'].enabled = False
+        self._task_observables['realsense/rgbd'].enabled = False
         self._gripper.observables.enable_all()
         self._prop.observables.enable_all()
 
-    def _build_variations(self):
-        pass
+    # def _build_variations(self):
+    #     pass
