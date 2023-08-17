@@ -58,7 +58,7 @@ class Robotiq2f85(composer.Entity):
 class RobotiqObservables(composer.Observables):
 
     @composer.observable
-    def tcp_pose(self):
+    def tcp_pos(self):
         return observable.MJCFFeature('xpos', self._entity.tool_center_point)
 
     @composer.observable
