@@ -32,7 +32,7 @@ BOXES = [
     # 'Perricone_MD_Chia_Serum',
     # 'Asus_Z97IPLUS_Motherboard_Mini_ITX_LGA1150_Socket'
 # ]
-_ITEMS = BOXES
+# _ITEMS = BOXES
 
 
 class Box(entities.BoxWithVertexSites):
