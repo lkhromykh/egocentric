@@ -22,6 +22,7 @@ class Builder:
     PARAMS = 'params.pkl'
     STATE = 'state.cpkl'
     CONFIG = 'config.yaml'
+    REPLAY = 'replay.npz'
 
     def __init__(self, cfg: Config):
         self.cfg = cfg
@@ -114,6 +115,8 @@ class Builder:
                            rng: int | np.random.Generator,
                            env: dm_env.Environment
                            ) -> ReplayBuffer:
+        if os.path.exists(path := self.exp_path(Builder.REPLAY)):
+            return ReplayBuffer.load(path)
         seq_len = self.cfg.sequence_len
         act_spec = env.action_spec()
         if isinstance(act_spec, dm_env.specs.DiscreteArray):

@@ -61,6 +61,7 @@ def main(cfg: Config):
             ts = env.reset()
             with open(builder.exp_path(Builder.STATE), 'wb') as f:
                 cloudpickle.dump(jax.device_get(state), f)
+            replay.save(builder.exp_path(Builder.REPLAY))
         logger.write(metrics)
 
 
