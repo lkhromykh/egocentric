@@ -211,12 +211,12 @@ class Task(abc.ABC, _Task):
 
         self._mjcf_variation.bind_attributes(
             self._arena.groundplane_texture,
-            rgb1=uni(),
+            rgb1=uni(.6, 1.),
             rgb2=uni(),
             # builtin=distributions.UniformChoice(('gradient', 'checker', 'flat')),
             mark='random',
             markrgb=uni(0., .1),
-            random=uni(0., .03),
+            random=uni(0., .02),
         )
         self._mjcf_variation.bind_attributes(
             self._arena.groundplane_material,

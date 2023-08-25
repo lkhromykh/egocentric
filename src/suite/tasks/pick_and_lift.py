@@ -23,16 +23,36 @@ BOXES = [
     'Office_Depot_HP_61Tricolor_Ink_Cartridge',
     'Sonicare_2_Series_Toothbrush_Plaque_Control',
     'Tune_Belt_Sport_Armband_For_Samsung_Galaxy_S3',
+    'Marc_Anthony_True_Professional_Oil_of_Morocco_Argan_Oil_Treatment',
+    'Hasbro_Life_Board_Game',
+    'Winning_Moves_1180_Aggravation_Board_Game',
+    'Crayola_Washable_Sidewalk_Chalk_16_pack',
+    'Dell_Ink_Cartridge_Yellow_31',
+    'Perricone_MD_Chia_Serum',
+    'Asus_Z97IPLUS_Motherboard_Mini_ITX_LGA1150_Socket'
 ]
-    # 'Marc_Anthony_True_Professional_Oil_of_Morocco_Argan_Oil_Treatment',
-    # 'Hasbro_Life_Board_Game',
-    # 'Winning_Moves_1180_Aggravation_Board_Game',
-    # 'Crayola_Washable_Sidewalk_Chalk_16_pack',
-    # 'Dell_Ink_Cartridge_Yellow_31',
-    # 'Perricone_MD_Chia_Serum',
-    # 'Asus_Z97IPLUS_Motherboard_Mini_ITX_LGA1150_Socket'
-# ]
-# _ITEMS = BOXES
+CYLINDERS = [
+    'Quercetin_500',
+    'Marc_Anthony_True_Professional_Strictly_Curls_Curl_Defining_Lotion',
+    'Nestle_Nesquik_Chocolate_Powder_Flavored_Milk_Additive_109_Oz_Canister',
+    '5_HTP',
+    'Big_Dot_Aqua_Pencil_Case',
+    'Weston_No_33_Signature_Sausage_Tonic_12_fl_oz',
+    'Theanine',
+    'Mastic_Gum',
+    'Whey_Protein_Vanilla',
+    'Cole_Hardware_Antislip_Surfacing_Material_White',
+    'Big_Dot_Pink_Pencil_Case',
+    'Lactoferrin',
+    'Room_Essentials_Mug_White_Yellow',
+    'QAbsorb_CoQ10',
+    'JarroDophilusFOS_Value_Size',
+    'Aroma_Stainless_Steel_Milk_Frother_2_Cup',
+    'Threshold_Ramekin_White_Porcelain',
+    'Prostate_Optimizer',
+    'Ecoforms_Plant_Container_GP16AMOCHA'
+]
+_ITEMS = _ITEMS[:20] + BOXES + CYLINDERS
 
 
 class Box(entities.BoxWithVertexSites):
