@@ -28,10 +28,10 @@ class Config(_Config):
 
     # Train
     jit: bool = True
-    buffer_capacity: int = 10 ** 5
+    buffer_capacity: int = 5 * 10 ** 5
     batch_size: int = 256
     sequence_len: int = 2
-    utd: float = .2
+    utd: float = .3
     learning_rate: float = 3e-4
     init_temperature: float = 1e-3
     temp_learning_rate: float = 1e-2
@@ -41,7 +41,7 @@ class Config(_Config):
     eval_every: int = 20_000
     train_after: int = 10_000
 
-    logdir: str = 'logdir/dr_image_textured_boxesncylinders'
+    logdir: str = 'logdir/dr_image_textured_boxesncylinders128'
     task: str = 'src'
     action_space: str = 'discrete'
     num_envs: int = 16
