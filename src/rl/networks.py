@@ -89,11 +89,12 @@ class Encoder(hk.Module):
         if cnn_feat:
             cnn_feat = concat(cnn_feat)
             emb.append(self._cnn(cnn_feat))
-
-        return concat(emb)
+        emb = concat(emb)
+        emb = _get_norm('layer')(emb)
+        return jnp.tanh(emb)
 
     def _mlp(self, x):
-        mlp = MLP(self.mlp_layers, self.act, self.norm)
+        mlp = MLP(self.mlp_layers, self.act, self.norm, activate_final=False)
         return mlp(x)
 
     def _cnn(self, x):
@@ -103,9 +104,11 @@ class Encoder(hk.Module):
         cnn = tuple(zip(self.cnn_depths, self.cnn_kernels, self.cnn_strides))
         for i, (depth, kernel, stride) in enumerate(cnn):
             x = hk.Conv2D(depth, kernel, stride, padding='VALID')(x)
-            x = _get_norm(self.norm)(x)
-            x = _get_act(self.act)(x)
-        return jnp.reshape(x, prefix + (-1,))
+            if i != len(cnn) - 1:
+                x = _get_norm(self.norm)(x)
+                x = _get_act(self.act)(x)
+        x = jnp.reshape(x, prefix + x.shape[-3:])
+        return jnp.mean(x, axis=(-3, -2))
 
 
 class Actor(hk.Module):
@@ -159,9 +162,8 @@ class Critic(hk.Module):
                  state: Array,
                  action: Array,
                  ) -> Array:
-        state = MLP(self.layers[:1], 'tanh', 'layer')(state)
         x = jnp.concatenate([state, action.astype(state.dtype)], -1)
-        x = MLP(self.layers[1:], self.act, self.norm)(x)
+        x = MLP(self.layers, self.act, self.norm)(x)
         return hk.Linear(1)(x)
 
 

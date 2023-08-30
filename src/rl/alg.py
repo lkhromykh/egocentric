@@ -1,5 +1,6 @@
 import jax
 import jax.numpy as jnp
+import numpy as np
 import haiku as hk
 import chex
 import optax
@@ -42,10 +43,10 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
         match cfg.action_space:
             # Avoid MC sampling for discrete action spaces.
             case 'discrete':
-                pi_a_dash_t = jnp.eye(act_dim)  # as one_hot
-                pi_a_dash_t = jnp.expand_dims(pi_a_dash_t, (1, 2))
+                pi_a_dash_t = np.eye(act_dim)  # as one_hot
+                pi_a_dash_t = np.expand_dims(pi_a_dash_t, (1, 2))
                 shape = (1, *policy_t.batch_shape, 1)
-                pi_a_dash_t = jnp.tile(pi_a_dash_t, shape)
+                pi_a_dash_t = np.tile(pi_a_dash_t, shape)
                 log_pi_dash_t = policy_t.log_prob(pi_a_dash_t)
             case 'continuous':
                 pi_a_dash_t, log_pi_dash_t = \
@@ -87,7 +88,7 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
         match cfg.action_space:
             case 'discrete':
                 entropy_t = policy_t.entropy()
-                target_entropy = cfg.entropy_per_dim * jnp.log(act_dim)
+                target_entropy = cfg.entropy_per_dim * np.log(act_dim)
                 actor_loss = cross_entropy(target_q_dash_t, log_pi_dash_t, tau)
             case 'continuous':
                 entropy_t = -log_pi_dash_t.mean(0)
