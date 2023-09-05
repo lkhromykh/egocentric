@@ -2,8 +2,11 @@ chex
 cloudpickle
 dm_control
 dm-haiku
-jax  # See github for CUDA compatible installation.
-jaxlib
+-f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+jax[cuda12_local]
+numpy
 optax
 rltools[all] @ git+https://github.com/lkhromykh/rltools.git@dev
+tensorflow==2.13.*
 tensorflow_probability[jax]
+git+https://github.com/RQC-Robotics/ur5-env.git@dev

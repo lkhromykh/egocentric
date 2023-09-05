@@ -89,10 +89,9 @@ class Encoder(hk.Module):
         if cnn_feat:
             cnn_feat = concat(cnn_feat)
             emb.append(self._cnn(cnn_feat))
-
         emb = concat(emb)
         emb = _get_norm('layer')(emb)
-        return jax.lax.tanh(emb)
+        return jnp.tanh(emb)
 
     def _mlp(self, x):
         mlp = MLP(self.mlp_layers, self.act, self.norm, activate_final=False)
@@ -108,7 +107,8 @@ class Encoder(hk.Module):
             if i != len(cnn) - 1:
                 x = _get_norm(self.norm)(x)
                 x = _get_act(self.act)(x)
-        return jnp.reshape(x, prefix + (-1,))
+        x = jnp.reshape(x, prefix + x.shape[-3:])
+        return jnp.mean(x, axis=(-3, -2))
 
 
 class Actor(hk.Module):
