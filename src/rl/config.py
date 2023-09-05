@@ -16,32 +16,32 @@ class Config(_Config):
     activation: str = 'elu'
     normalization: str = 'layer'
     asymmetric: bool = True
-    mlp_layers: Layers = (512,)
+    mlp_layers: Layers = (256,)
     cnn_depths: Layers = (64, 64, 64, 64)
     cnn_kernels: Layers = (3, 3, 3, 3)
     cnn_strides: Layers = (2, 2, 2, 2)
     actor_keys: str = r'image|tcp_pose|object_detected|gripper_pos'
-    actor_layers: Layers = (512, 512, 256)
+    actor_layers: Layers = (256, 256)
     critic_keys: str = r'robotiq_2f85|model'
-    critic_layers: Layers = (512, 512, 256)
+    critic_layers: Layers = (256, 256)
     ensemble_size: int = 2
 
     # Train
     jit: bool = True
     buffer_capacity: int = 5 * 10 ** 5
     batch_size: int = 256
-    sequence_len: int = 2
-    utd: float = .3
+    sequence_len: int = 4
+    utd: float = .2
     learning_rate: float = 3e-4
     init_temperature: float = 1e-3
     temp_learning_rate: float = 1e-2
     polyak_tau: float = 5e-3
-    weight_decay: float = 1e-4
+    weight_decay: float = 1e-5
     max_grad: float = 50.
     eval_every: int = 20_000
     train_after: int = 10_000
 
-    logdir: str = 'logdir/dr_image_textured_boxesncylinders128'
+    logdir: str = 'logdir/dr_image_textured_small_boxes96'
     task: str = 'src'
     action_space: str = 'discrete'
     num_envs: int = 16
