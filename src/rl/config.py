@@ -31,7 +31,7 @@ class Config(_Config):
     jit: bool = True
     buffer_capacity: int = 5 * 10 ** 5
     batch_size: int = 256
-    sequence_len: int = 4
+    sequence_len: int = 8
     utd: float = .1
     learning_rate: float = 3e-4
     init_temperature: float = 1e-3
@@ -42,7 +42,7 @@ class Config(_Config):
     eval_every: int = 40_000
     train_after: int = 10_000
 
-    logdir: str = 'logdir/nodr_image_boxesonly64_large'
+    logdir: str = 'logdir/dr_image_boxesncylinders64_large'
     task: str = 'src'
     action_space: str = 'discrete'
     num_envs: int = 16

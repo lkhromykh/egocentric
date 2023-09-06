@@ -52,7 +52,7 @@ CYLINDERS = [
     'Prostate_Optimizer',
     'Ecoforms_Plant_Container_GP16AMOCHA'
 ]
-_ITEMS = BOXES
+_ITEMS = BOXES + CYLINDERS
 
 
 class Box(entities.BoxWithVertexSites):
@@ -143,6 +143,6 @@ class PickAndLift(base.Task):
         self._task_observables['realsense/rgbd'].enabled = False
         self._gripper.observables.enable_all()
         self._prop.observables.enable_all()
-
-    def _build_variations(self):
-        pass
+    #
+    # def _build_variations(self):
+    #     pass
