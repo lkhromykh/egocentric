@@ -18,9 +18,9 @@ class Config(_Config):
     normalization: str = 'layer'
     asymmetric: bool = True
     mlp_layers: Layers = (256,)
-    cnn_depths: Layers = (64, 64, 64, 64)
-    cnn_kernels: Layers = (3, 3, 3, 3)
-    cnn_strides: Layers = (2, 2, 2, 2)
+    cnn_depths: Layers = (32, 64, 64)
+    cnn_kernels: Layers = (8, 4, 3)
+    cnn_strides: Layers = (4, 2, 1)
     actor_keys: str = r'image|tcp_pose|object_detected|length'
     actor_layers: Layers = (256, 256)
     critic_keys: str = r'robotiq_2f85|model'
@@ -39,10 +39,10 @@ class Config(_Config):
     polyak_tau: float = 5e-3
     weight_decay: float = 1e-5
     max_grad: float = 20.
-    eval_every: int = 20_000
+    eval_every: int = 40_000
     train_after: int = 10_000
 
-    logdir: str = 'logdir/nodr_image_boxesonly64_postmlp_smaller'
+    logdir: str = 'logdir/nodr_image_boxesonly64_mnih'
     task: str = 'src'
     action_space: str = 'discrete'
     num_envs: int = 16

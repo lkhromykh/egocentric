@@ -84,10 +84,10 @@ class PickAndLift(Task):
         spec = scene.observation_spec()
         img_spec = spec['realsense/image']
         img_spec = img_spec.replace(shape=self.IMG_SHAPE + (3,))
-        pos_spec = spec['arm/ActualTCPPose'].replace(shape=(6,))
+        pose_spec = spec['arm/ActualTCPPose'].replace(shape=(6,))
         return {
             self.IMG_KEY: img_spec,
-            self.POSE_KEY: pos_spec,
+            self.POSE_KEY: pose_spec,
             self.OBJ_KEY: spec['gripper/object_detected'],
             self.GRIPPER_POS: spec['gripper/pos'],
         }
@@ -138,7 +138,7 @@ class PickAndLift(Task):
             'gripper': self._grasped
         })
 
-HOST = "10.201.2.179"
+HOST = None
 arm = nodes.TCPPose(
         host=HOST,
         port=50002,
