@@ -107,8 +107,7 @@ class Encoder(hk.Module):
             if i != len(cnn) - 1:
                 x = _get_norm(self.norm)(x)
                 x = _get_act(self.act)(x)
-        x = jnp.reshape(x, prefix + x.shape[-3:])
-        return jnp.mean(x, axis=(-3, -2))
+        return jnp.reshape(x, prefix + (-1,))
 
 
 class Actor(hk.Module):

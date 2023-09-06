@@ -41,7 +41,7 @@ class Config(_Config):
     eval_every: int = 20_000
     train_after: int = 10_000
 
-    logdir: str = 'logdir/dr_image_boxesonly96'
+    logdir: str = 'logdir/dr_image_boxesonly96_nogap'
     task: str = 'src'
     action_space: str = 'discrete'
     num_envs: int = 16
