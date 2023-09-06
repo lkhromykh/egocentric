@@ -39,7 +39,7 @@ class PickAndLift(Task):
 
     CTRL_LIMIT = .03
     ROT_LIMIT = np.pi / 6
-    IMG_SHAPE = (96, 96)
+    IMG_SHAPE = (64, 64)
     IMG_KEY = "realsense/image"
     OBJ_KEY = "robotiq_2f85/object_detected"
     POSE_KEY = "tcp_pose"
@@ -159,7 +159,7 @@ env = Environment(
     random_state=0,
     scene=scene_,
     task=task,
-    time_limit=30,#20
+    time_limit=16,
     max_violations_num=2
 )
 breakpoint()
