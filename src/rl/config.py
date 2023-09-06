@@ -32,7 +32,7 @@ class Config(_Config):
     buffer_capacity: int = 5 * 10 ** 5
     batch_size: int = 256
     sequence_len: int = 4
-    utd: float = .5
+    utd: float = .1
     learning_rate: float = 3e-4
     init_temperature: float = 1e-3
     temp_learning_rate: float = 1e-2

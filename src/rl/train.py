@@ -53,13 +53,12 @@ def main(cfg: Config):
         batch = next(ds)
         state, metrics = step(state, batch)
         fps = interactions / (time.time() - start)
-        metrics.update(step=state.step.item(), fps=fps, env_steps=interactions)
+        metrics.update(step=interactions, fps=fps)
 
         if (interactions % cfg.eval_every) < cfg.sequence_len:
             eval_reward = eval_loop(env, lambda obs: policy(obs, False))
             metrics.update(eval_mean=eval_reward.mean(),
-                           eval_std=eval_reward.std(),
-                           step=interactions)
+                           eval_std=eval_reward.std())
             ts = env.reset()
             with open(builder.exp_path(Builder.STATE), 'wb') as f:
                 cloudpickle.dump(jax.device_get(state), f)

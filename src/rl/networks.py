@@ -73,7 +73,7 @@ class Encoder(hk.Module):
         self.norm = norm
         
     def __call__(self, obs: types.Observation) -> Array:
-        cnn_feat, emb = [], [], []
+        cnn_feat, emb = [], []
         def concat(x): return jnp.concatenate(x, -1)
         selected_keys = []
         for key, feat in sorted(obs.items()):
