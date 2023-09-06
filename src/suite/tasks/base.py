@@ -211,7 +211,7 @@ class Task(abc.ABC, _Task):
 
         self._mjcf_variation.bind_attributes(
             self._arena.groundplane_texture,
-            rgb1=uni(.6, 1.),
+            rgb1=eq_noise(.6, 1.),
             rgb2=uni(),
             # builtin=distributions.UniformChoice(('gradient', 'checker', 'flat')),
             mark='random',
@@ -228,8 +228,8 @@ class Task(abc.ABC, _Task):
         self._mjcf_variation.bind_attributes(
             self._camera,
             pos=noises.Additive(uni(-0.01, 0.01)),
-            quat=noises.Additive(uni(-0.03, 0.03)),
-            fovy=noises.Additive(uni(-10, 10))
+            quat=noises.Additive(uni(-0.02, 0.02)),
+            fovy=noises.Additive(uni(-5, 5))
         )
 
     def _build_observables(self):
@@ -238,7 +238,7 @@ class Task(abc.ABC, _Task):
         gripper = self._gripper.mjcf_model.model
 
         def noisy_cam(img, random_state):
-            noise = random_state.randint(-15, 15, img.shape)
+            noise = random_state.randint(-10, 10, img.shape)
             return np.clip(img + noise, 0, 255).astype(img.dtype)
         self._task_observables[f'{cam}/image'].corruptor = noisy_cam
 
@@ -272,9 +272,3 @@ class Task(abc.ABC, _Task):
             axang = rotm2axang2(mat)
             return np.concatenate([pos, axang])
         self._task_observables['tcp_pose'] = observable.Generic(tcp_pose)
-
-        def gripper_pos(physics):
-            act = physics.bind(self._gripper.actuators)
-            return act.length / 0.7980633
-        self._task_observables['gripper_pos'] = observable.Generic(gripper_pos)
-

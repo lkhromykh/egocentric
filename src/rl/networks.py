@@ -73,7 +73,7 @@ class Encoder(hk.Module):
         self.norm = norm
         
     def __call__(self, obs: types.Observation) -> Array:
-        mlp_feat, cnn_feat, emb = [], [], []
+        cnn_feat, emb = [], [], []
         def concat(x): return jnp.concatenate(x, -1)
         selected_keys = []
         for key, feat in sorted(obs.items()):
@@ -81,15 +81,14 @@ class Encoder(hk.Module):
                 selected_keys.append(key)
                 match feat.dtype:
                     case jnp.uint8: cnn_feat.append(feat)
-                    case _: mlp_feat.append(jnp.atleast_1d(feat))
+                    case _: emb.append(jnp.atleast_1d(feat))
         print(f'{self.name} selected keys: {selected_keys}')
-        if mlp_feat:
-            mlp_feat = concat(mlp_feat)
-            emb.append(self._mlp(mlp_feat))
         if cnn_feat:
             cnn_feat = concat(cnn_feat)
             emb.append(self._cnn(cnn_feat))
+
         emb = concat(emb)
+        emb = self._mlp(emb)
         emb = _get_norm('layer')(emb)
         return jnp.tanh(emb)
 

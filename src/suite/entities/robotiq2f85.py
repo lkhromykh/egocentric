@@ -67,7 +67,9 @@ class RobotiqObservables(composer.Observables):
 
     @composer.observable
     def length(self):
-        return observable.MJCFFeature('length', self._entity.actuators)
+        def normed(len_, random_state): return len_ / 0.7980633
+        return observable.MJCFFeature('length', self._entity.actuators,
+                                      corruptor=normed)
 
     @composer.observable
     def force(self):
