@@ -17,10 +17,10 @@ class Config(_Config):
     activation: str = 'elu'
     normalization: str = 'layer'
     asymmetric: bool = True
-    mlp_layers: Layers = (512,)
-    cnn_depths: Layers = (64, 64, 64, 64)
+    mlp_layers: Layers = (64,)
+    cnn_depths: Layers = (32, 32, 32, 32)
     cnn_kernels: Layers = (3, 3, 3, 3)
-    cnn_strides: Layers = (2, 2, 1, 1)
+    cnn_strides: Layers = (2, 1, 1, 1)
     actor_keys: str = r'image|tcp_pose|object_detected|length'
     actor_layers: Layers = (512, 512)
     critic_keys: str = r'robotiq_2f85|model'
@@ -42,7 +42,7 @@ class Config(_Config):
     eval_every: int = 40_000
     train_after: int = 10_000
 
-    logdir: str = 'logdir/dr_image_boxesncylinders64_large'
+    logdir: str = 'logdir/dr_image_boxesncylinders64_bottleneck'
     task: str = 'src'
     action_space: str = 'discrete'
     num_envs: int = 16

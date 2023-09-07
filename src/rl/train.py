@@ -40,7 +40,7 @@ def main(cfg: Config):
 
     start = time.time()
     ts = env.reset()
-    interactions = int(state.step.item() / cfg.utd)
+    interactions = 0
     while True:
         rngseq.reserve(cfg.sequence_len)
         trajectories, ts = train_loop(env, policy, cfg.sequence_len, ts)

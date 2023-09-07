@@ -21,7 +21,12 @@ def task_sampler():
         'S', 'SW', 'W', 'NW'
     )
     toys = (
-        'santa', 'sponge', 'pink', 'red', 'white'
+        'red santa',
+        'grey walrus',
+        'orange sponge',
+        'black brick',
+        'green ball',
+        'blue ball',
     )
     variations = list(product(orientations, toys))
     while True:
@@ -62,7 +67,7 @@ class PickAndLift(Task):
 
     def __init__(self,
                  threshold: float,
-                 init_q: list[float],
+                 init_q
                  ):
         """
         Args:
@@ -78,11 +83,11 @@ class PickAndLift(Task):
         self._task_gen = task_sampler()
 
     def initialize_episode(self, scene, random_state):
+        scene.arm.rtde_control.moveJ(self._init_q)
+        scene.gripper.move(scene.gripper.min_position)
         print('Manually setup scene:', next(self._task_gen), '\nDone?')
         input()
         super().initialize_episode(scene, random_state)
-        scene.arm.rtde_control.moveJ(self._init_q)
-        scene.gripper.move(scene.gripper.min_position)
         self._grasped = -1.
         self._init_pos = np.asarray(scene.arm.rtde_receive.getActualTCPPose())[:3]
         self._num_rot = 0
@@ -128,7 +133,7 @@ class PickAndLift(Task):
     def _pose_fn(self, pose):
         # TODO: make sure that pose correspond or transform via rtde
         xyz, axang = np.split(pose, 2)
-        xyz -= np.array([-0.4922, 0.0381, -0.01]) # achieve 0.03 at the lowest point
+        xyz -= np.array([-0.4922, 0.0381, 0.01]) # achieve 0.03 at the lowest point
         scale = 1 - 2 * np.pi / np.linalg.norm(axang)
         axang *= scale
         return np.concatenate([xyz, axang])
@@ -180,7 +185,7 @@ env = Environment(
     time_limit=16,
     max_violations_num=2
 )
-breakpoint()
+#breakpoint()
 address = ('', 5555)
 env = RemoteEnvServer(env, address)
 env.run()
