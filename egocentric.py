@@ -1,4 +1,6 @@
 from enum import IntEnum
+import random
+from itertools import product
 import logging
 logging.basicConfig(level=logging.INFO)
 
@@ -11,6 +13,19 @@ from ur_env.environment import Task
 from ur_env.scene import Scene, nodes
 from ur_env.remote import RemoteEnvServer
 from ur_env.environment import Environment
+
+
+def task_sampler():
+    orientations = (
+        'N', 'NE', 'E', 'SE',
+        'S', 'SW', 'W', 'NW'
+    )
+    toys = (
+        'santa', 'sponge', 'pink', 'red', 'white'
+    )
+    variations = list(product(orientations, toys))
+    while True:
+        yield random.choice(variations)
 
 
 class DiscreteActions(IntEnum):
@@ -60,8 +75,11 @@ class PickAndLift(Task):
         self._grasped: float = None
         self._init_pos: float = None
         self._num_rot: int = None
+        self._task_gen = task_sampler()
 
     def initialize_episode(self, scene, random_state):
+        print('Manually setup scene:', next(self._task_gen), '\nDone?')
+        input()
         super().initialize_episode(scene, random_state)
         scene.arm.rtde_control.moveJ(self._init_q)
         scene.gripper.move(scene.gripper.min_position)
