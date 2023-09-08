@@ -10,6 +10,7 @@ class Config(_Config):
 
     gamma: float = .98
     lambda_: float = 1.
+    entropy_coef: float = 1e-3
     entropy_per_dim: float = .1
     num_actions: int = 20
 
@@ -17,8 +18,8 @@ class Config(_Config):
     activation: str = 'elu'
     normalization: str = 'layer'
     asymmetric: bool = True
-    mlp_layers: Layers = (64,)
-    cnn_depths: Layers = (32, 32, 32, 32)
+    mlp_layers: Layers = (256,)
+    cnn_depths: Layers = (64, 64, 64, 64)
     cnn_kernels: Layers = (3, 3, 3, 3)
     cnn_strides: Layers = (2, 1, 1, 1)
     actor_keys: str = r'image|tcp_pose|object_detected|length'
@@ -29,7 +30,7 @@ class Config(_Config):
 
     # Train
     jit: bool = True
-    buffer_capacity: int = 5 * 10 ** 5
+    buffer_capacity: int = 10 ** 5
     batch_size: int = 256
     sequence_len: int = 8
     utd: float = .1
@@ -40,9 +41,10 @@ class Config(_Config):
     weight_decay: float = 1e-6
     max_grad: float = 20.
     eval_every: int = 40_000
+    save_replay_every: int = 10 ** 5
     train_after: int = 10_000
 
-    logdir: str = 'logdir/dr_image_boxesncylinders64_bottleneck'
+    logdir: str = 'logdir/dr_image64_allitems'
     task: str = 'src'
     action_space: str = 'discrete'
     num_envs: int = 16

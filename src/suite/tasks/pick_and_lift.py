@@ -52,7 +52,7 @@ CYLINDERS = [
     'Prostate_Optimizer',
     'Ecoforms_Plant_Container_GP16AMOCHA'
 ]
-_ITEMS = BOXES + CYLINDERS
+# _ITEMS = BOXES + CYLINDERS
 
 
 class Box(entities.BoxWithVertexSites):

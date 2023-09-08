@@ -37,8 +37,6 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
 
         policy_t = nets.actor(params, obs_t)
         log_pi_t = policy_t[:-1].log_prob(a_t)
-        tau = jnp.maximum(params['~']['temperature'], -18.)
-        tau = jax.nn.softplus(tau) + 1e-8
         act_dim = a_t.shape[-1]
         match cfg.action_space:
             # Avoid MC sampling for discrete action spaces.
@@ -85,31 +83,27 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
         critic_loss = jnp.mean(jnp.expand_dims(not_reset, -1) * critic_loss)
 
         target_q_dash_t = target_q_dash_t.mean(-1)
+        tau = cfg.entropy_coef
         match cfg.action_space:
             case 'discrete':
                 entropy_t = policy_t.entropy()
-                target_entropy = cfg.entropy_per_dim * np.log(act_dim)
                 actor_loss = cross_entropy(target_q_dash_t, log_pi_dash_t, tau)
             case 'continuous':
                 entropy_t = -log_pi_dash_t.mean(0)
-                target_entropy = (cfg.entropy_per_dim - 1.) * act_dim
-                actor_loss = -target_q_dash_t.mean(0) - sg(tau) * entropy_t
+                actor_loss = -target_q_dash_t.mean(0) - tau * entropy_t
         actor_loss = jnp.mean(actor_loss)
-        temp_loss = tau * sg(entropy_t.mean() - target_entropy)
 
         adv_gap = target_q_dash_t.max(0) - target_q_dash_t.min(0)
         metrics = {
             'critic_loss': critic_loss,
             'actor_loss': actor_loss,
-            'temperature_loss': temp_loss,
-            'temperature': tau,
             'entropy': entropy_t.mean(),
             'log_importance': log_rho_t.mean(),
             'reward': r_t.mean(),
             'value': target_q_t.mean(),
             'adv_gap': adv_gap.mean(),
         }
-        return actor_loss + critic_loss + temp_loss, metrics
+        return actor_loss + critic_loss, metrics
 
     def step(state: TrainingState,
              batch: types.Trajectory

@@ -41,13 +41,14 @@ def main(cfg: Config):
     start = time.time()
     ts = env.reset()
     interactions = 0
+    envs_steps = cfg.num_envs * cfg.sequence_len
     while True:
         rngseq.reserve(cfg.sequence_len)
         trajectories, ts = train_loop(env, policy, cfg.sequence_len, ts)
         for i in range(cfg.num_envs):
             trajectory = jax.tree_util.tree_map(lambda t: t[:, i], trajectories)
             replay.add(trajectory)
-        interactions += cfg.sequence_len * cfg.num_envs
+        interactions += envs_steps
         if interactions < cfg.train_after:
             continue
         batch = next(ds)
@@ -55,13 +56,14 @@ def main(cfg: Config):
         fps = interactions / (time.time() - start)
         metrics.update(step=interactions, fps=fps)
 
-        if (interactions % cfg.eval_every) < cfg.sequence_len:
+        if (interactions % cfg.eval_every) < envs_steps:
             eval_reward = eval_loop(env, lambda obs: policy(obs, False))
             metrics.update(eval_mean=eval_reward.mean(),
                            eval_std=eval_reward.std())
             ts = env.reset()
             with open(builder.exp_path(Builder.STATE), 'wb') as f:
                 cloudpickle.dump(jax.device_get(state), f)
+        if (interactions % cfg.save_replay_every) < envs_steps:
             replay.save(builder.exp_path(Builder.REPLAY))
         logger.write(metrics)
 

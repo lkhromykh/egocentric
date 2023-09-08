@@ -264,10 +264,6 @@ class Networks(NamedTuple):
             def init():
                 dist = actor(dummy_obs)
                 critic(dummy_obs, dist.sample(seed=jax.random.PRNGKey(0)))
-                init_temp = jnp.log(jnp.exp(cfg.init_temperature) - 1)
-                hk.get_parameter('temperature',
-                                 (),
-                                 init=hk.initializers.Constant(init_temp))
 
             return init, (actor, critic, act)
 
