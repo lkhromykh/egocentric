@@ -18,10 +18,10 @@ class Config(_Config):
     activation: str = 'elu'
     normalization: str = 'layer'
     asymmetric: bool = True
-    mlp_layers: Layers = (256,)
+    mlp_layers: Layers = (512,)
     cnn_depths: Layers = (64, 64, 64, 64)
     cnn_kernels: Layers = (3, 3, 3, 3)
-    cnn_strides: Layers = (2, 1, 1, 1)
+    cnn_strides: Layers = (2, 2, 1, 1)
     actor_keys: str = r'image|tcp_pose|object_detected|length'
     actor_layers: Layers = (512, 512)
     critic_keys: str = r'robotiq_2f85|model'
@@ -32,8 +32,8 @@ class Config(_Config):
     jit: bool = True
     buffer_capacity: int = 10 ** 5
     batch_size: int = 256
-    sequence_len: int = 8
-    utd: float = .1
+    sequence_len: int = 16
+    utd: float = .05
     learning_rate: float = 3e-4
     init_temperature: float = 1e-3
     temp_learning_rate: float = 1e-2
@@ -44,11 +44,11 @@ class Config(_Config):
     save_replay_every: int = 10 ** 5
     train_after: int = 10_000
 
-    logdir: str = 'logdir/dr_image64_allitems'
+    logdir: str = 'logdir/dr_image64_allitems1'
     task: str = 'src'
     action_space: str = 'discrete'
     num_envs: int = 16
-    seed: int = 0
+    seed: int = 1
 
 
 _DEBUG_CONFIG = Config(
