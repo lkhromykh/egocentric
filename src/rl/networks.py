@@ -2,8 +2,8 @@ from collections.abc import Callable
 from typing import NamedTuple
 import re
 
+import chex
 from dm_env import specs
-import numpy as np
 import jax
 import jax.numpy as jnp
 import haiku as hk
@@ -44,31 +44,98 @@ class MLP(hk.Module):
 
     def __call__(self, x: Array) -> Array:
         for idx, layer in enumerate(self.layers):
-            x = hk.Linear(layer)(x)
-            if idx != len(self.layers) - 1 or self.activate_final:
+            activate = idx != len(self.layers) - 1 or self.activate_final
+            x = hk.Linear(layer, with_bias=not activate)(x)
+            if activate:
                 x = _get_norm(self.norm)(x)
                 x = _get_act(self.act)(x)
         return x
 
+
+class ResNetBlock(hk.Module):
+
+    def __call__(self, x):
+        shortcut = x
+        filters = x.shape[-1]
+        x = _get_norm('layer')(x)
+        x = _get_act('relu')(x)
+        x = hk.Conv2D(filters // 4, 1, with_bias=False)(x)
+        x = _get_norm('layer')(x)
+        x = _get_act('relu')(x)
+        x = hk.Conv2D(filters // 4, 3, with_bias=False)(x)
+        x = _get_norm('layer')(x)
+        x = _get_act('relu')(x)
+        x = hk.Conv2D(filters, 1, with_bias=False)(x)
+        return x + shortcut
+    
+
+class BottleneckResNetBlock(hk.Module):
+    
+    def __init__(self,
+                 channels: int,
+                 name: str | None = None
+                 ) -> None:
+        super().__init__(name=name)
+        self.channels = channels
+
+    def __call__(self, x):
+        x = _get_norm('layer')(x)
+        x = _get_act('relu')(x)
+        shortcut = hk.Conv2D(self.channels, 1, 2, with_bias=False)(x)
+        x = hk.Conv2D(self.channels // 4, 1, with_bias=False)(x)
+        x = _get_norm('layer')(x)
+        x = _get_act('relu')(x)
+        x = hk.Conv2D(self.channels // 4, 3, 2, with_bias=False)(x)
+        x = _get_norm('layer')(x)
+        x = _get_act('relu')(x)
+        x = hk.Conv2D(self.channels, 1, with_bias=False)(x)
+        return x + shortcut
+
+
+class ResNet(hk.Module):
+    
+    def __init__(self,
+                 filters: types.Layers,
+                 stack: int = 0,
+                 name: str | None = None
+                 ) -> None:
+        super().__init__(name=name)
+        assert not any(map(lambda f: f % 4, filters))
+        self.filters = filters
+        self.stacks = stack
+        
+    def __call__(self, x):
+        chex.assert_type(x, int)
+        x /= 255.
+        prefix = x.shape[:-3]
+        x = jnp.reshape(x, (-1,) + x.shape[-3:])
+        x = hk.Conv2D(self.filters[0], 3, 2, with_bias=False)(x)
+        x = _get_norm('layer')(x)
+        x = _get_act('relu')(x)
+        for depth in self.filters:
+            x = BottleneckResNetBlock(depth)(x)
+            for _ in range(self.stacks):
+                x = ResNetBlock()(x)
+        x = _get_act('relu')(x)
+        return jnp.reshape(x, prefix + (-1,))
+        
 
 class Encoder(hk.Module):
 
     def __init__(self,
                  obs_keys: str,
                  mlp_layers: types.Layers,
-                 cnn_kernels: types.Layers,
-                 cnn_depths: types.Layers,
-                 cnn_strides: types.Layers,
+                 resnet_filters: types.Layers,
+                 resnet_stacks: int,
                  act: str,
                  norm: str,
                  name: str | None = None
                  ) -> None:
-        super().__init__(name)
+        super().__init__(name=name)
         self.obs_keys = obs_keys
         self.mlp_layers = mlp_layers
-        self.cnn_kernels = cnn_kernels
-        self.cnn_depths = cnn_depths
-        self.cnn_strides = cnn_strides
+        self.resnet_filters = resnet_filters
+        self.resnet_stacks = resnet_stacks
         self.act = act
         self.norm = norm
         
@@ -97,16 +164,7 @@ class Encoder(hk.Module):
         return mlp(x)
 
     def _cnn(self, x):
-        x /= 255.
-        prefix = x.shape[:-3]
-        x = jnp.reshape(x, (np.prod(prefix, dtype=int),) + x.shape[-3:])
-        cnn = tuple(zip(self.cnn_depths, self.cnn_kernels, self.cnn_strides))
-        for i, (depth, kernel, stride) in enumerate(cnn):
-            x = hk.Conv2D(depth, kernel, stride, padding='VALID')(x)
-            if i != len(cnn) - 1:
-                x = _get_norm(self.norm)(x)
-                x = _get_act(self.act)(x)
-        return jnp.reshape(x, prefix + (-1,))
+        return ResNet(filters=self.resnet_filters, stack=self.resnet_stacks)(x)
 
 
 class Actor(hk.Module):
@@ -210,9 +268,8 @@ class Networks(NamedTuple):
                 return Encoder(
                     keys,
                     cfg.mlp_layers,
-                    cfg.cnn_kernels,
-                    cfg.cnn_depths,
-                    cfg.cnn_strides,
+                    cfg.resnet_filters,
+                    cfg.resnet_stacks,
                     cfg.activation,
                     cfg.normalization,
                     name=name

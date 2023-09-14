@@ -52,7 +52,6 @@ CYLINDERS = [
     'Prostate_Optimizer',
     'Ecoforms_Plant_Container_GP16AMOCHA'
 ]
-# _ITEMS = BOXES + CYLINDERS
 
 
 class Box(entities.BoxWithVertexSites):
@@ -87,7 +86,8 @@ class PickAndLift(base.Task):
     def initialize_episode_mjcf(self, random_state):
         try:
             super().initialize_episode_mjcf(random_state)
-            item = random_state.choice(_ITEMS)
+            # item = random_state.choice(_ITEMS)
+            item = 'Lactoferrin'
             self._prop.detach()
             self._prop = entities.HouseholdItem(item,
                                                 scale='.4 .4 .4',
@@ -143,6 +143,6 @@ class PickAndLift(base.Task):
         self._task_observables['realsense/rgbd'].enabled = False
         self._gripper.observables.enable_all()
         self._prop.observables.enable_all()
-    #
-    # def _build_variations(self):
-    #     pass
+
+    def _build_variations(self):
+        pass

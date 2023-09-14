@@ -10,7 +10,7 @@ chex.disable_asserts()
 
 from rltools import loggers
 
-from src.rl.config import Config, _DEBUG_CONFIG
+from src.rl.config import Config
 from src.rl.builder import Builder
 from src.rl.ops import train_loop, eval_loop
 
@@ -70,5 +70,4 @@ def main(cfg: Config):
 
 if __name__ == '__main__':
     config = Config.from_entrypoint()
-    # config = _DEBUG_CONFIG
     main(config)

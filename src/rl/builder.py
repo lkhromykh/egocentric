@@ -51,7 +51,7 @@ class Builder:
                     return wrap(load(
                         seed,
                         action_mode=c.action_space,
-                        img_size=(64, 64),
+                        img_size=self.cfg.img_size,
                         control_timestep=.05,
                         time_limit=3.,
                     ))
@@ -90,25 +90,8 @@ class Builder:
             return jax.device_put(state)
         c = self.cfg
         optim = optax.adamw(c.learning_rate, weight_decay=c.weight_decay)
-        optim = optax.chain(optax.clip_by_global_norm(c.max_grad), optim)
-
-        def label_fn(key):
-            match key[0]:
-                case 'a': return 'actor'
-                case 'c': return 'critic'
-                case '~': return 'dual'
-                case _: raise ValueError(key)
-
-        labels = type(params)({
-            k: jax.tree_util.tree_map(lambda t: label_fn(k), v)
-            for k, v in params.items()
-        })
-        optim = optax.multi_transform(
-            {'actor': optim,
-             'critic': optim,
-             'dual': optax.adam(c.temp_learning_rate)},
-            labels
-        )
+        mask = jax.tree_util.tree_map(lambda x: x.ndim != 1, params)
+        optim = optax.chain(optax.clip_by_global_norm(c.max_grad), optim, mask)
         return TrainingState.init(rng, params, optim, c.polyak_tau)
 
     def make_replay_buffer(self,

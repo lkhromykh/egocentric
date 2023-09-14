@@ -238,7 +238,7 @@ class Task(abc.ABC, _Task):
         gripper = self._gripper.mjcf_model.model
 
         def noisy_cam(img, random_state):
-            noise = random_state.randint(-10, 10, img.shape)
+            noise = random_state.randint(-6, 6, img.shape)
             return np.clip(img + noise, 0, 255).astype(img.dtype)
         self._task_observables[f'{cam}/image'].corruptor = noisy_cam
 
@@ -267,7 +267,7 @@ class Task(abc.ABC, _Task):
 
         def tcp_pose(physics):
             tcp = physics.bind(self._gripper.tool_center_point)
-            pos = tcp.xpos
+            pos = tcp.xpos[-1:]
             mat = tcp.xmat.reshape((3, 3))
             axang = rotm2axang2(mat)
             return np.concatenate([pos, axang])
