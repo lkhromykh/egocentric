@@ -58,13 +58,13 @@ class ResNetBlock(hk.Module):
         shortcut = x
         filters = x.shape[-1]
         x = _get_norm('layer')(x)
-        x = _get_act('relu')(x)
+        x = _get_act('elu')(x)
         x = hk.Conv2D(filters // 4, 1, with_bias=False)(x)
         x = _get_norm('layer')(x)
-        x = _get_act('relu')(x)
+        x = _get_act('elu')(x)
         x = hk.Conv2D(filters // 4, 3, with_bias=False)(x)
         x = _get_norm('layer')(x)
-        x = _get_act('relu')(x)
+        x = _get_act('elu')(x)
         x = hk.Conv2D(filters, 1, with_bias=False)(x)
         return x + shortcut
     
@@ -80,14 +80,14 @@ class BottleneckResNetBlock(hk.Module):
 
     def __call__(self, x):
         x = _get_norm('layer')(x)
-        x = _get_act('relu')(x)
+        x = _get_act('elu')(x)
         shortcut = hk.Conv2D(self.channels, 1, 2, with_bias=False)(x)
         x = hk.Conv2D(self.channels // 4, 1, with_bias=False)(x)
         x = _get_norm('layer')(x)
-        x = _get_act('relu')(x)
+        x = _get_act('elu')(x)
         x = hk.Conv2D(self.channels // 4, 3, 2, with_bias=False)(x)
         x = _get_norm('layer')(x)
-        x = _get_act('relu')(x)
+        x = _get_act('elu')(x)
         x = hk.Conv2D(self.channels, 1, with_bias=False)(x)
         return x + shortcut
 
@@ -111,12 +111,12 @@ class ResNet(hk.Module):
         x = jnp.reshape(x, (-1,) + x.shape[-3:])
         x = hk.Conv2D(self.filters[0], 3, 2, with_bias=False)(x)
         x = _get_norm('layer')(x)
-        x = _get_act('relu')(x)
+        x = _get_act('elu')(x)
         for depth in self.filters:
             x = BottleneckResNetBlock(depth)(x)
             for _ in range(self.stacks):
                 x = ResNetBlock()(x)
-        x = _get_act('relu')(x)
+        x = _get_act('elu')(x)
         return jnp.reshape(x, prefix + (-1,))
         
 
@@ -149,7 +149,6 @@ class Encoder(hk.Module):
                 match feat.dtype:
                     case jnp.uint8: cnn_feat.append(feat)
                     case _: emb.append(jnp.atleast_1d(feat))
-        print(f'{self.name} selected keys: {selected_keys}')
         if cnn_feat:
             cnn_feat = concat(cnn_feat)
             emb.append(self._cnn(cnn_feat))

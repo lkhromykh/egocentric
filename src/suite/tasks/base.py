@@ -24,12 +24,12 @@ class DiscreteActions(IntEnum):
     # In a such way left-handed coordinate system occurs.
     # Also naming doesn't account for rotations
     #   which can turn everything upside down.
-    FORWARD = 0
-    BACKWARD = 1
-    RIGHT = 2
-    LEFT = 3
-    UP = 4
-    DOWN = 5
+    LEFT = 0
+    RIGHT = 1
+    FORWARD = 2
+    BACKWARD = 3
+    DOWN = 4
+    UP = 5
     CLOSE = 6
     OPEN = 7
     ROLL_CW = 8
@@ -127,8 +127,11 @@ class Task(abc.ABC, _Task):
     def initialize_episode(self, physics, random_state):
         self._physics_variation.apply_variations(physics, random_state)
         pos = self.workspace.tcp_init.sample(random_state)
-        self._set_mocap(physics, pos, common.DOWN_QUATERNION)
-        self._gripper.set_pose(physics, pos, common.DOWN_QUATERNION)
+        quat = random_state.uniform(-1, 1., (2,))
+        quat /= np.linalg.norm(quat)
+        quat = np.concatenate([[0.], quat, [0.]])
+        self._set_mocap(physics, pos, quat)
+        self._gripper.set_pose(physics, pos, quat)
 
     def before_step(self, physics, action, random_state):
         try:  # TODO: find out why BAD_CTRL occurs.
@@ -137,6 +140,9 @@ class Task(abc.ABC, _Task):
             else:
                 action = np.clip(action, -1, 1)
             pos, grip, rot = map(np.squeeze, np.split(action, [3, 4]))
+            rmat = physics.bind(self._gripper.tool_center_point).xmat
+            rmat = rmat.reshape((3, 3))
+            pos = common.CTRL_LIMIT * rmat @ pos
             mocap_pos, mocap_quat = self._get_mocap(physics)
             if rot.size and rot:
                 rot = common.ROT_LIMIT * np.array([0, 0, rot])
@@ -145,7 +151,7 @@ class Task(abc.ABC, _Task):
             else:
                 quat = None
             self._set_mocap(physics,
-                            pos=mocap_pos + common.CTRL_LIMIT * pos,
+                            pos=mocap_pos + pos,
                             quat=quat
                             )
             if grip:
