@@ -26,8 +26,8 @@ class Config(_Config):
     # Train
     jit: bool = True
     buffer_capacity: int = 10 ** 5
-    batch_size: int = 64
-    sequence_len: int = 16
+    batch_size: int = 128
+    sequence_len: int = 8
     utd: float = .1
     learning_rate: float = 3e-4
     polyak_tau: float = 5e-3

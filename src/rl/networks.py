@@ -118,6 +118,7 @@ class ResNet(hk.Module):
             x = BottleneckResNetBlock(depth)(x)
             for _ in range(self.stacks):
                 x = ResNetBlock()(x)
+        x = act(x)
         return jnp.reshape(x, prefix + (-1,))
         
 
