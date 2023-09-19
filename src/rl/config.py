@@ -16,8 +16,8 @@ class Config(_Config):
     # Architecture
     asymmetric: bool = True
     resnet_filters: Layers = (32, 64, 128)
-    resnet_stacks: int = 1
-    actor_keys: str = r'image'
+    resnet_blocks: Layers = (2, 2, 2)
+    actor_keys: str = r'image|length|object_detected'
     actor_layers: Layers = (256,)
     critic_keys: str = r'robotiq_2f85|model'
     critic_layers: Layers = (512, 512, 256)
@@ -42,4 +42,4 @@ class Config(_Config):
     action_space: str = 'discrete'
     num_envs: int = 16
     seed: int = 1
-    logdir: str = 'logdir/dr_image64_resnet_oneitem'
+    logdir: str = 'logdir/dr_image64_resnet_allitems'

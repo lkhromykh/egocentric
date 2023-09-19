@@ -100,12 +100,12 @@ class ResNet(hk.Module):
     
     def __init__(self,
                  filters: types.Layers,
-                 stack: int = 0,
+                 blocks: types.Layers,
                  name: str | None = None
                  ) -> None:
         super().__init__(name=name)
         self.filters = filters
-        self.stacks = stack
+        self.blocks = blocks
         
     def __call__(self, x):
         chex.assert_type(x, int)
@@ -114,9 +114,9 @@ class ResNet(hk.Module):
         x = hk.Conv2D(self.filters[0], 3, 2, with_bias=False)(x)
         x = layer_norm(x)
         x = act(x)
-        for depth in self.filters:
+        for depth, blocks in zip(self.filters, self.blocks):
             x = BottleneckResNetBlock(depth)(x)
-            for _ in range(self.stacks):
+            for _ in range(blocks - 1):
                 x = ResNetBlock()(x)
         x = act(x)
         return jnp.reshape(x, prefix + (-1,))
@@ -127,13 +127,13 @@ class Encoder(hk.Module):
     def __init__(self,
                  obs_keys: str,
                  resnet_filters: types.Layers,
-                 resnet_stacks: int,
+                 resnet_blocks: types.Layers,
                  name: str | None = None
                  ) -> None:
         super().__init__(name=name)
         self.obs_keys = obs_keys
         self.resnet_filters = resnet_filters
-        self.resnet_stacks = resnet_stacks
+        self.resnet_blocks = resnet_blocks
 
     def __call__(self, obs: types.Observation) -> Array:
         cnn_feat, emb = [], []
@@ -152,7 +152,7 @@ class Encoder(hk.Module):
         return concat(emb)
 
     def _cnn(self, x):
-        return ResNet(filters=self.resnet_filters, stack=self.resnet_stacks)(x)
+        return ResNet(filters=self.resnet_filters, blocks=self.resnet_blocks)(x)
 
 
 class Actor(hk.Module):
@@ -249,7 +249,7 @@ class Networks(NamedTuple):
                 return Encoder(
                     keys,
                     cfg.resnet_filters,
-                    cfg.resnet_stacks,
+                    cfg.resnet_blocks,
                     name=name
                 )
 

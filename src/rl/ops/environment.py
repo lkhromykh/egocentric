@@ -68,14 +68,18 @@ def train_loop(env: dm_env.Environment,
     return dict(trajectory), ts
 
 
-def eval_loop(env: dm_env.Environment, policy: ActionLogProbFn) -> np.floating:
+def eval_loop(env: dm_env.Environment,
+              policy: ActionLogProbFn
+              ) -> tuple[np.ndarray, np.ndarray]:
     ts = env.reset()
     shape = np.asanyarray(ts.step_type).shape
     cont = np.ones(shape, dtype=bool)
     reward = np.zeros(shape, dtype=env.reward_spec().dtype)
+    success = np.zeros(shape, dtype=bool)
     while cont.any():
         action, _ = policy(ts.observation)
         ts = env.step(action)
         reward += cont * _nan_to_num(ts.reward)
-        cont *= np.logical_not(ts.last())
-    return reward
+        cont &= np.logical_not(ts.last())
+        success |= reward > 0.9
+    return reward, success
