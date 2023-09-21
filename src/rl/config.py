@@ -26,7 +26,7 @@ class Config(_Config):
     # Train
     jit: bool = True
     buffer_capacity: int = 10 ** 5
-    batch_size: int = 128
+    batch_size: int = 256
     sequence_len: int = 8
     utd: float = .1
     learning_rate: float = 3e-4
@@ -42,4 +42,4 @@ class Config(_Config):
     action_space: str = 'discrete'
     num_envs: int = 16
     seed: int = 1
-    logdir: str = 'logdir/dr_image64_resnet_allitems'
+    logdir: str = 'logdir/dr_image64_resnet_allitems_large'
