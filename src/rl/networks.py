@@ -111,9 +111,6 @@ class ResNet(hk.Module):
         chex.assert_type(x, int)
         prefix = x.shape[:-3]
         x = jnp.reshape(x / 255., (-1,) + x.shape[-3:])
-        x = hk.Conv2D(self.filters[0], 3, 2, with_bias=False)(x)
-        x = layer_norm(x)
-        x = act(x)
         for depth, blocks in zip(self.filters, self.blocks):
             x = BottleneckResNetBlock(depth)(x)
             for _ in range(blocks - 1):
