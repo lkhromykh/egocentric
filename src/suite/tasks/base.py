@@ -91,7 +91,7 @@ class Task(abc.ABC, _Task):
                  control_timestep: float = common.CONTROL_TIMESTEP,
                  action_mode: ActionMode = 'discrete',
                  workspace: WorkSpace = _DEFAULT_WORKSPACE,
-                 img_size: tuple[int, int] = (128, 128)
+                 img_size: tuple[int, int] = (64, 64)
                  ) -> None:
         self._control_timestep = control_timestep
         self.action_mod = action_mode.lower()
@@ -210,7 +210,7 @@ class Task(abc.ABC, _Task):
             self._mjcf_variation.bind_attributes(
                 light,
                 pos=noises.Additive(uni(-.6, .6)),
-                diffuse=eq_noise(.1, .7),
+                diffuse=eq_noise(.05, .7),
                 specular=eq_noise(.1, .3),
                 ambient=eq_noise(.1, .5)
             )
@@ -233,9 +233,9 @@ class Task(abc.ABC, _Task):
 
         self._mjcf_variation.bind_attributes(
             self._camera,
-            pos=noises.Additive(uni(-0.01, 0.01)),
-            quat=noises.Additive(uni(-0.02, 0.02)),
-            fovy=noises.Additive(uni(-5, 5))
+            pos=noises.Additive(uni(-0.005, 0.005)),
+            quat=noises.Additive(uni(-0.01, 0.01)),
+            fovy=noises.Additive(uni(-3, 3))
         )
 
     def _build_observables(self):
@@ -244,7 +244,7 @@ class Task(abc.ABC, _Task):
         gripper = self._gripper.mjcf_model.model
 
         def noisy_cam(img, random_state):
-            noise = random_state.randint(-6, 6, img.shape)
+            noise = random_state.randint(-5, 5, img.shape)
             return np.clip(img + noise, 0, 255).astype(img.dtype)
         self._task_observables[f'{cam}/image'].corruptor = noisy_cam
 
@@ -270,11 +270,3 @@ class Task(abc.ABC, _Task):
         rgbd_obs = observable.Generic(rgbd)
         rgbd_obs.corruptor = None #noisy_cam
         self._task_observables[f'{cam}/rgbd'] = rgbd_obs
-
-        def tcp_pose(physics):
-            tcp = physics.bind(self._gripper.tool_center_point)
-            pos = tcp.xpos[-1:]
-            mat = tcp.xmat.reshape((3, 3))
-            axang = rotm2axang2(mat)
-            return np.concatenate([pos, axang])
-        self._task_observables['tcp_pose'] = observable.Generic(tcp_pose)

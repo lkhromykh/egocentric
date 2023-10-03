@@ -87,6 +87,7 @@ class PickAndLift(base.Task):
         try:
             super().initialize_episode_mjcf(random_state)
             item = random_state.choice(_ITEMS)
+            item = 'Dino_3'
             self._prop.detach()
             self._prop = entities.HouseholdItem(item,
                                                 scale='.4 .4 .4',
@@ -143,5 +144,5 @@ class PickAndLift(base.Task):
         self._gripper.observables.enable_all()
         self._prop.observables.enable_all()
 
-    # def _build_variations(self):
-    #     pass
+    def _build_variations(self):
+        pass

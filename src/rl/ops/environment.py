@@ -81,5 +81,5 @@ def eval_loop(env: dm_env.Environment,
         ts = env.step(action)
         reward += cont * _nan_to_num(ts.reward)
         cont &= np.logical_not(ts.last())
-        success |= reward > 0.9
+        success |= reward > 0.95
     return reward, success

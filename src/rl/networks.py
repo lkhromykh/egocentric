@@ -56,65 +56,74 @@ class MLP(hk.Module):
         return x
 
 
-class ResNetBlock(hk.Module):
+class DenseNetLayer(hk.Module):
 
-    def __call__(self, x):
+    def __init__(self,
+                 growth_rate: int,
+                 name: str | None = None
+                 ) -> None:
+        super().__init__(name=name)
+        self.growth_rate = growth_rate
+
+    def __call__(self, x: Array) -> Array:
         shortcut = x
-        filters = x.shape[-1]
         x = layer_norm(x)
         x = act(x)
-        x = hk.Conv2D(filters, 1, with_bias=False)(x)
+        x = hk.Conv2D(4 * self.growth_rate, (1, 1), with_bias=False)(x)
         x = layer_norm(x)
         x = act(x)
-        x = hk.Conv2D(filters, 3, with_bias=False)(x)
-        x = layer_norm(x)
-        x = act(x)
-        x = hk.Conv2D(filters, 1, with_bias=False)(x)
-        return x + shortcut
-    
+        x = hk.Conv2D(self.growth_rate, (3, 3), with_bias=False)(x)
+        return jnp.concatenate([shortcut, x], -1)
 
-class BottleneckResNetBlock(hk.Module):
-    
+
+class DenseNetBlock(hk.Module):
+
     def __init__(self,
-                 channels: int,
+                 num_layers: int,
+                 growth_rate: int,
                  name: str | None = None
                  ) -> None:
         super().__init__(name=name)
-        self.channels = channels
+        self.num_layers = num_layers
+        self.growth_rate = growth_rate
 
-    def __call__(self, x):
-        x = layer_norm(x)
-        x = act(x)
-        shortcut = hk.Conv2D(self.channels, 1, 2, with_bias=False)(x)
-        x = hk.Conv2D(self.channels, 1, with_bias=False)(x)
-        x = layer_norm(x)
-        x = act(x)
-        x = hk.Conv2D(self.channels, 3, 2, with_bias=False)(x)
-        x = layer_norm(x)
-        x = act(x)
-        x = hk.Conv2D(self.channels, 1, with_bias=False)(x)
-        return x + shortcut
+    def __call__(self, x: Array) -> Array:
+        for _ in range(self.num_layers):
+            x = DenseNetLayer(self.growth_rate)(x)
+        return x
 
 
-class ResNet(hk.Module):
-    
+class DenseNetBottleneckBlock(hk.Module):
+
+    def __call__(self, x: Array) -> Array:
+        filters = x.shape[-1] // 2
+        x = layer_norm(x)
+        x = act(x)
+        x = hk.Conv2D(filters, (1, 1), with_bias=False)(x)
+        return hk.avg_pool(x, (2, 2, 1), (2, 2, 1), padding='VALID')
+
+
+class DenseNet(hk.Module):
+
     def __init__(self,
-                 filters: types.Layers,
-                 blocks: types.Layers,
+                 layers: types.Layers,
+                 growth_rate: int,
                  name: str | None = None
                  ) -> None:
         super().__init__(name=name)
-        self.filters = filters
-        self.blocks = blocks
-        
-    def __call__(self, x):
+        self.layers = layers
+        self.growth_rate = growth_rate
+
+    def __call__(self, x: Array) -> Array:
         chex.assert_type(x, int)
         prefix = x.shape[:-3]
         x = jnp.reshape(x / 255., (-1,) + x.shape[-3:])
-        for depth, blocks in zip(self.filters, self.blocks):
-            x = BottleneckResNetBlock(depth)(x)
-            for _ in range(blocks - 1):
-                x = ResNetBlock()(x)
+        x = hk.Conv2D(2 * self.growth_rate, (3, 3), with_bias=False)(x)
+        for i, layer in enumerate(self.layers):
+            x = DenseNetBlock(layer, self.growth_rate)(x)
+            if i != len(self.layers) - 1:
+                x = DenseNetBottleneckBlock()(x)
+        x = layer_norm(x)
         x = act(x)
         return jnp.reshape(x, prefix + (-1,))
         
@@ -123,14 +132,14 @@ class Encoder(hk.Module):
 
     def __init__(self,
                  obs_keys: str,
-                 resnet_filters: types.Layers,
-                 resnet_blocks: types.Layers,
+                 densenet_layers: types.Layers,
+                 densenet_growth_rate: int,
                  name: str | None = None
                  ) -> None:
         super().__init__(name=name)
         self.obs_keys = obs_keys
-        self.resnet_filters = resnet_filters
-        self.resnet_blocks = resnet_blocks
+        self.densenet_layers = densenet_layers
+        self.densenet_growth_rate = densenet_growth_rate
 
     def __call__(self, obs: types.Observation) -> Array:
         cnn_feat, emb = [], []
@@ -149,7 +158,8 @@ class Encoder(hk.Module):
         return concat(emb)
 
     def _cnn(self, x):
-        return ResNet(filters=self.resnet_filters, blocks=self.resnet_blocks)(x)
+        return DenseNet(layers=self.densenet_layers,
+                        growth_rate=self.densenet_growth_rate)(x)
 
 
 class Actor(hk.Module):
@@ -245,8 +255,8 @@ class Networks(NamedTuple):
             def encoder(keys, name=None):
                 return Encoder(
                     keys,
-                    cfg.resnet_filters,
-                    cfg.resnet_blocks,
+                    cfg.densenet_layers,
+                    cfg.densenet_growth_rate,
                     name=name
                 )
 
