@@ -18,7 +18,7 @@ class Config(_Config):
     densenet_layers: Layers = (3, 3, 3, 3, 3)
     densenet_growth_rate: int = 12
     actor_keys: str = r'image|length|object_detected'
-    actor_layers: Layers = (64, 256, 256)
+    actor_layers: Layers = (64, 512, 512)
     critic_keys: str = r'robotiq_2f85|model'
     critic_layers: Layers = (512, 512, 512)
     ensemble_size: int = 2
@@ -26,8 +26,8 @@ class Config(_Config):
     # Train
     jit: bool = True
     buffer_capacity: int = 10 ** 5
-    batch_size: int = 256
-    sequence_len: int = 8
+    batch_size: int = 128
+    sequence_len: int = 4
     utd: float = .1
     learning_rate: float = 3e-4
     polyak_tau: float = 5e-3

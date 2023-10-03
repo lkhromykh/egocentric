@@ -89,7 +89,6 @@ class Builder:
                 state = cloudpickle.load(f)
             return jax.device_put(state)
         c = self.cfg
-        # TODO: restore proper weight decay.
         optim = optax.adamw(c.learning_rate, weight_decay=c.weight_decay)
         optim = optax.chain(optax.clip_by_global_norm(c.max_grad), optim)
         return TrainingState.init(rng, params, optim, c.polyak_tau)

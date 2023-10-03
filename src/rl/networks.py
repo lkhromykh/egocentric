@@ -37,13 +37,11 @@ class MLP(hk.Module):
 
     def __init__(self,
                  layers: types.Layers,
-                 activation: Callable = act,
                  activate_final: bool = True,
                  name: str | None = None,
                  ) -> None:
         super().__init__(name)
         self.layers = layers
-        self.activation = activation
         self.activate_final = activate_final
 
     def __call__(self, x: Array) -> Array:
@@ -52,7 +50,7 @@ class MLP(hk.Module):
             x = hk.Linear(layer, with_bias=not activate)(x)
             if activate:
                 x = layer_norm(x)
-                x = self.activation(x)
+                x = act(x)
         return x
 
 
