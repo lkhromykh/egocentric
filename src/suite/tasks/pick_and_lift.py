@@ -87,7 +87,7 @@ class PickAndLift(base.Task):
         try:
             super().initialize_episode_mjcf(random_state)
             item = random_state.choice(_ITEMS)
-            item = 'Dino_3'
+            item = 'Office_Depot_Canon_PG21XL_Remanufactured_Ink_Cartridge_Black'
             self._prop.detach()
             self._prop = entities.HouseholdItem(item,
                                                 scale='.4 .4 .4',

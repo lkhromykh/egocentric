@@ -2,14 +2,11 @@ import collections.abc
 from typing import Any, Callable, TypedDict
 
 import jax
-import jax.numpy as jnp
-
 from dm_env import specs
 
 from src.rl.training_state import TrainingState
 
-RNG = jax.random.PRNGKey
-Array = jnp.ndarray
+RNG = Array = jax.Array
 
 Action = Array
 ActionSpecs = specs.DiscreteArray | specs.BoundedArray

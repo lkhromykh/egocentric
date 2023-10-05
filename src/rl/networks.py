@@ -37,41 +37,19 @@ class MLP(hk.Module):
 
     def __init__(self,
                  layers: types.Layers,
-                 activate_final: bool = True,
+                 activation: Callable = act,
                  name: str | None = None,
                  ) -> None:
         super().__init__(name)
         self.layers = layers
-        self.activate_final = activate_final
+        self.activation = activation
 
     def __call__(self, x: Array) -> Array:
-        for idx, layer in enumerate(self.layers):
-            activate = idx != len(self.layers) - 1 or self.activate_final
-            x = hk.Linear(layer, with_bias=not activate)(x)
-            if activate:
-                x = layer_norm(x)
-                x = act(x)
+        for layer in self.layers:
+            x = hk.Linear(layer, with_bias=False)(x)
+            x = layer_norm(x)
+            x = self.activation(x)
         return x
-
-
-class DenseNetLayer(hk.Module):
-
-    def __init__(self,
-                 growth_rate: int,
-                 name: str | None = None
-                 ) -> None:
-        super().__init__(name=name)
-        self.growth_rate = growth_rate
-
-    def __call__(self, x: Array) -> Array:
-        shortcut = x
-        x = layer_norm(x)
-        x = act(x)
-        x = hk.Conv2D(4 * self.growth_rate, (1, 1), with_bias=False)(x)
-        x = layer_norm(x)
-        x = act(x)
-        x = hk.Conv2D(self.growth_rate, (3, 3), with_bias=False)(x)
-        return jnp.concatenate([shortcut, x], -1)
 
 
 class DenseNetBlock(hk.Module):
@@ -87,7 +65,11 @@ class DenseNetBlock(hk.Module):
 
     def __call__(self, x: Array) -> Array:
         for _ in range(self.num_layers):
-            x = DenseNetLayer(self.growth_rate)(x)
+            shortcut = x
+            x = layer_norm(x)
+            x = act(x)
+            x = hk.Conv2D(self.growth_rate, (3, 3), with_bias=False)(x)
+            x = jnp.concatenate([shortcut, x], -1)
         return x
 
 

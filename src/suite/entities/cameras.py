@@ -5,7 +5,6 @@ from dm_control import mjcf
 from dm_control.composer.observation import observable
 
 
-# TODO: remove mutable variables
 class CameraSpec(TypedDict, total=False):
     name: str
     pos: tuple[float, float, float]
@@ -26,7 +25,7 @@ EGOCENTRIC_REALSENSE = CameraSpec(
     name='realsense',
     pos=(0., .091, 0.),
     quat=(0., 0., 0.999, .03),
-    fovy=57
+    fovy=58
 )
 
 
