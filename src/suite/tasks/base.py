@@ -15,7 +15,6 @@ from dm_control.rl.control import PhysicsError
 
 from src.suite import common
 from src.suite import entities
-from src.suite.transformations import rotm2axang2
 
 ActionMode = Literal['discrete', 'continuous']
 

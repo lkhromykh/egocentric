@@ -31,7 +31,7 @@ def main(cfg: Config):
     state = builder.make_training_state(next(rngseq), params)
     step = builder.make_step_fn(nets)
     logger = loggers.TFSummaryLogger(cfg.logdir, label='', step_key='step')
-    print(hk.experimental.tabulate(nets.act)(env.reset().observation))
+    print("Number of params: %d" % hk.data_structures.tree_size(params))
 
     def policy(obs, train=True):
         obs = jax.device_put(obs)
