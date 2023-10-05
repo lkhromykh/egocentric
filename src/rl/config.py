@@ -42,4 +42,4 @@ class Config(_Config):
     action_space: str = 'discrete'
     num_envs: int = 16
     seed: int = 1
-    logdir: str = 'logdir/nodr_image64_densenet_oneitem1'
+    logdir: str = 'logdir/nodr_image64_densenet_oneitem1_cnnbackbone'

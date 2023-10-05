@@ -103,9 +103,29 @@ class DenseNet(hk.Module):
             x = DenseNetBlock(layer, self.growth_rate)(x)
             if i != len(self.layers) - 1:
                 x = DenseNetBottleneckBlock()(x)
+        x = hk.Conv2d(self.growth_rate, (1, 1))(x)
+        x = jnp.reshape(x, prefix + (-1,))
         x = layer_norm(x)
         x = act(x)
-        return jnp.reshape(x, prefix + (-1,))
+        return x
+
+
+class Backbone(hk.Module):
+
+    def __call__(self, x):
+        chex.assert_type(x, int)
+        prefix = x.shape[:-3]
+        x = jnp.reshape(x / 255., (-1,) + x.shape[-3:])
+        x = hk.Conv2D(32, 3, 2, with_bias=False)(x)
+        x = layer_norm(x)
+        x = act(x)
+        x = hk.Conv2D(32, 3, 2, with_bias=False)(x)
+        x = layer_norm(x)
+        x = act(x)
+        x = hk.Conv2D(4, 3, padding='VALID')(x)
+        x = jnp.reshape(x, prefix + (-1,))
+        x = act(x)
+        return x
         
 
 class Encoder(hk.Module):
@@ -138,6 +158,7 @@ class Encoder(hk.Module):
         return concat(emb)
 
     def _cnn(self, x):
+        return Backbone()(x)
         return DenseNet(layers=self.densenet_layers,
                         growth_rate=self.densenet_growth_rate)(x)
 
