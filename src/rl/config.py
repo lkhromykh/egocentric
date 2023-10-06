@@ -16,12 +16,12 @@ class Config(_Config):
     # Architecture
     asymmetric: bool = True
     mlp_layers: Layers = 256,
-    densenet_layers: Layers = 2, 2, 2
+    densenet_layers: Layers = 2, 2
     densenet_growth_rate: int = 16
     actor_keys: str = r'image|tcp_height|length|object_detected'
     actor_layers: Layers = 64, 256, 256
     critic_keys: str = r'robotiq_2f85|model'
-    critic_layers: Layers = 256, 256, 256
+    critic_layers: Layers = 512, 512, 256
     ensemble_size: int = 2
 
     # Train
@@ -43,4 +43,4 @@ class Config(_Config):
     action_space: str = 'discrete'
     num_envs: int = 16
     seed: int = 1
-    logdir: str = 'logdir/nodr_image64_densenet_oneitem2'
+    logdir: str = 'logdir/dr_image64_densenet_allitems'

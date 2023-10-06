@@ -97,8 +97,8 @@ class DenseNet(hk.Module):
     def __call__(self, x: Array) -> Array:
         chex.assert_type(x, int)
         prefix = x.shape[:-3]
-        x = jnp.reshape(x / 255., (-1,) + x.shape[-3:])
-        x = hk.Conv2D(2 * self.growth_rate, (3, 3))(x)
+        x = jnp.reshape(x / 255. - 0.5, (-1,) + x.shape[-3:])
+        x = hk.Conv2D(2 * self.growth_rate, (3, 3), with_bias=False)(x)
         for layer in self.layers:
             x = DenseNetBlock(layer, self.growth_rate)(x)
             x = DenseNetBottleneckBlock()(x)
