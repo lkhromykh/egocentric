@@ -54,12 +54,6 @@ CYLINDERS = [
 ]
 
 
-class Box(entities.BoxWithVertexSites):
-
-    def _build_observables(self):
-        return entities.StaticPrimitiveObservables(self)
-
-
 class PickAndLift(base.Task):
 
     MARGIN: float = .15
@@ -137,6 +131,11 @@ class PickAndLift(base.Task):
             return obj_pos - tcp_pos
         self._task_observables[f'{self._prop.mjcf_model.model}/distance'] =\
             observable.Generic(distance)
+
+        def height(physics):
+            tcp_pos = physics.bind(self._gripper.tool_center_point).xpos
+            return tcp_pos[2:]
+        self._task_observables['tcp_height'] = observable.Generic(height)
 
         for obs in self._task_observables.values():
             obs.enabled = True

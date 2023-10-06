@@ -25,7 +25,7 @@ EGOCENTRIC_REALSENSE = CameraSpec(
     name='realsense',
     pos=(0., .091, 0.),
     quat=(0., 0., 0.999, .03),
-    fovy=58
+    fovy=57
 )
 
 

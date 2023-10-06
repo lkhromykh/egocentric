@@ -76,10 +76,10 @@ class DenseNetBlock(hk.Module):
 class DenseNetBottleneckBlock(hk.Module):
 
     def __call__(self, x: Array) -> Array:
-        filters = x.shape[-1] // 2
         x = layer_norm(x)
         x = act(x)
-        x = hk.Conv2D(filters, (1, 1), with_bias=False)(x)
+        bn_filters = x.shape[-1] // 2
+        x = hk.Conv2D(bn_filters, (1, 1), with_bias=False)(x)
         return hk.avg_pool(x, (2, 2, 1), (2, 2, 1), padding='VALID')
 
 
@@ -98,51 +98,32 @@ class DenseNet(hk.Module):
         chex.assert_type(x, int)
         prefix = x.shape[:-3]
         x = jnp.reshape(x / 255., (-1,) + x.shape[-3:])
-        x = hk.Conv2D(2 * self.growth_rate, (3, 3), with_bias=False)(x)
-        for i, layer in enumerate(self.layers):
+        x = hk.Conv2D(2 * self.growth_rate, (3, 3))(x)
+        for layer in self.layers:
             x = DenseNetBlock(layer, self.growth_rate)(x)
-            if i != len(self.layers) - 1:
-                x = DenseNetBottleneckBlock()(x)
-        x = hk.Conv2d(self.growth_rate, (1, 1))(x)
-        x = jnp.reshape(x, prefix + (-1,))
+            x = DenseNetBottleneckBlock()(x)
         x = layer_norm(x)
         x = act(x)
-        return x
+        return jnp.reshape(x, prefix + (-1,))
 
-
-class Backbone(hk.Module):
-
-    def __call__(self, x):
-        chex.assert_type(x, int)
-        prefix = x.shape[:-3]
-        x = jnp.reshape(x / 255., (-1,) + x.shape[-3:])
-        x = hk.Conv2D(32, 3, 2, with_bias=False)(x)
-        x = layer_norm(x)
-        x = act(x)
-        x = hk.Conv2D(32, 3, 2, with_bias=False)(x)
-        x = layer_norm(x)
-        x = act(x)
-        x = hk.Conv2D(4, 3, padding='VALID')(x)
-        x = jnp.reshape(x, prefix + (-1,))
-        x = act(x)
-        return x
-        
 
 class Encoder(hk.Module):
 
     def __init__(self,
                  obs_keys: str,
+                 mlp_layers: types.Layers,
                  densenet_layers: types.Layers,
                  densenet_growth_rate: int,
                  name: str | None = None
                  ) -> None:
         super().__init__(name=name)
         self.obs_keys = obs_keys
+        self.mlp_layers = mlp_layers
         self.densenet_layers = densenet_layers
         self.densenet_growth_rate = densenet_growth_rate
 
     def __call__(self, obs: types.Observation) -> Array:
-        cnn_feat, emb = [], []
+        cnn_feat, mlp_feat, emb = [], [], []
         def concat(x): return jnp.concatenate(x, -1)
         selected_keys = []
         for key, feat in sorted(obs.items()):
@@ -150,17 +131,17 @@ class Encoder(hk.Module):
                 selected_keys.append(key)
                 match feat.dtype:
                     case jnp.uint8: cnn_feat.append(feat)
-                    case _: emb.append(jnp.atleast_1d(feat))
+                    case _: mlp_feat.append(jnp.atleast_1d(feat))
+        if mlp_feat:
+            mlp_feat = concat(mlp_feat)
+            mlp = MLP(self.mlp_layers)
+            emb.append(mlp(mlp_feat))
         if cnn_feat:
             cnn_feat = concat(cnn_feat)
-            emb.append(self._cnn(cnn_feat))
-
+            cnn = DenseNet(layers=self.densenet_layers,
+                           growth_rate=self.densenet_growth_rate)
+            emb.append(cnn(cnn_feat))
         return concat(emb)
-
-    def _cnn(self, x):
-        return Backbone()(x)
-        return DenseNet(layers=self.densenet_layers,
-                        growth_rate=self.densenet_growth_rate)(x)
 
 
 class Actor(hk.Module):
@@ -176,7 +157,7 @@ class Actor(hk.Module):
 
     def __call__(self, state: Array) -> tfd.Distribution:
         state = MLP(self.layers)(state)
-        w_init = hk.initializers.VarianceScaling(1e-3)
+        w_init = hk.initializers.VarianceScaling(1e-2)
         match sp := self.action_spec:
             case specs.DiscreteArray():
                 logits = hk.Linear(sp.num_values, w_init=w_init)(state)
@@ -256,6 +237,7 @@ class Networks(NamedTuple):
             def encoder(keys, name=None):
                 return Encoder(
                     keys,
+                    cfg.mlp_layers,
                     cfg.densenet_layers,
                     cfg.densenet_growth_rate,
                     name=name

@@ -20,9 +20,6 @@ ActionMode = Literal['discrete', 'continuous']
 
 
 class DiscreteActions(IntEnum):
-    # In a such way left-handed coordinate system occurs.
-    # Also naming doesn't account for rotations
-    #   which can turn everything upside down.
     LEFT = 0
     RIGHT = 1
     FORWARD = 2
