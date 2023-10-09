@@ -245,14 +245,12 @@ class Networks(NamedTuple):
 
             def actor(obs):
                 if cfg.asymmetric:
-                    keys = cfg.actor_keys
                     name = 'actor_encoder'
                     sg = lambda x: x
                 else:
-                    keys = cfg.critic_keys
                     name = 'critic_encoder'
                     sg = jax.lax.stop_gradient
-                state = encoder(keys, name)(obs)
+                state = encoder(cfg.actor_keys, name)(obs)
                 state = sg(state)
                 actor_ = Actor(
                     action_spec,
@@ -262,7 +260,8 @@ class Networks(NamedTuple):
                 return actor_(state)
 
             def critic(obs, action):
-                state = encoder(cfg.critic_keys, 'critic_encoder')(obs)
+                keys = cfg.critic_keys if cfg.asymmetric else cfg.actor_keys
+                state = encoder(keys, 'critic_encoder')(obs)
                 critic_ = CriticsEnsemble(
                     cfg.ensemble_size,
                     cfg.critic_layers,
