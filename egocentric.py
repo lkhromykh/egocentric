@@ -5,6 +5,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 import numpy as np
+from scipy.spatial.transform import Rotation
 from dm_env import specs
 import matplotlib.pyplot as plt
 from PIL import Image
@@ -34,24 +35,41 @@ def task_sampler():
 
 
 class DiscreteActions(IntEnum):
-
-    FORWARD = 0
-    BACKWARD = 1
-    RIGHT = 2
-    LEFT = 3
-    UP = 4
-    DOWN = 5
+    LEFT = 0
+    RIGHT = 1
+    FORWARD = 2
+    BACKWARD = 3
+    DOWN = 4
+    UP = 5
     CLOSE = 6
     OPEN = 7
     ROLL_CW = 8
     ROLL_CCW = 9
 
     @staticmethod
-    def as_array(action: int, dtype=np.float32):
+    def as_array(action: int, dtype=np.float32) -> np.ndarray:
         idx, val = np.divmod(action, 2)
         ar = np.zeros(len(DiscreteActions) // 2, dtype=dtype)
         ar[idx] = -1 if val else 1
         return ar
+
+    @staticmethod
+    def sim2real_spoofing(action: int):
+        """Sim2Real defects. Identity mapping in case of exact """
+        mapping = {
+            0: 0,
+            1: 1,
+            2: 2,
+            3: 3,
+            4: 4,
+            5: 5,
+            6: 6,
+            7: 7,
+            8: 8,
+            9: 9,
+        }
+        action = mapping.get(action)
+        return DiscreteActions.as_array(action)
 
 
 class PickAndLift(Task):
@@ -61,8 +79,8 @@ class PickAndLift(Task):
     ROT_LIMIT = np.pi / 6
     IMG_SHAPE = (64, 64)
     IMG_KEY = "realsense/image"
+    HEIGHT_KEY = "tcp_height"
     OBJ_KEY = "robotiq_2f85/object_detected"
-    POSE_KEY = "tcp_pose"
     GRIPPER_POS = "robotiq_2f85/length"
 
     def __init__(self,
@@ -85,7 +103,8 @@ class PickAndLift(Task):
     def initialize_episode(self, scene, random_state):
         scene.arm.rtde_control.moveJ(self._init_q)
         scene.gripper.move(scene.gripper.min_position)
-        print('Manually setup scene:', next(self._task_gen), '\nDone?')
+        print('Manually setup scene:', next(self._task_gen),
+              '\nPress any key to continue.')
         input()
         super().initialize_episode(scene, random_state)
         self._grasped = -1.
@@ -95,10 +114,10 @@ class PickAndLift(Task):
     def get_observation(self, scene):
         obs = scene.get_observation()
         img = self._img_fn(obs['realsense/image'])
-        pose = self._pose_fn(obs['arm/ActualTCPPose'])
+        height = obs['arm/ActualTCPPose'][2:]
         return {
             self.IMG_KEY: img,
-            self.POSE_KEY: pose,
+            self.HEIGHT_KEY: height,
             self.OBJ_KEY: obs['gripper/object_detected'],
             self.GRIPPER_POS: obs['gripper/pos'],
         }
@@ -107,10 +126,11 @@ class PickAndLift(Task):
         spec = scene.observation_spec()
         img_spec = spec['realsense/image']
         img_spec = img_spec.replace(shape=self.IMG_SHAPE + (3,))
-        pose_spec = spec['arm/ActualTCPPose'].replace(shape=(6,))
+        height_spec = spec['arm/ActualTCPPose']
+        height_spec = height_spec.replace(shape=(1,))
         return {
             self.IMG_KEY: img_spec,
-            self.POSE_KEY: pose_spec,
+            self.HEIGHT_KEY: height_spec,
             self.OBJ_KEY: spec['gripper/object_detected'],
             self.GRIPPER_POS: spec['gripper/pos'],
         }
@@ -125,28 +145,23 @@ class PickAndLift(Task):
     def _img_fn(self, img: np.ndarray) -> np.ndarray:
         img = img[:, 144:-224]
         h, w, c = img.shape
-        assert (h == w) * (c == 3)
+        assert h == w and c == 3
         img = Image.fromarray(img)
         img = img.resize(self.IMG_SHAPE, resample=Image.Resampling.LANCZOS)
         return np.asarray(img)
-
-    def _pose_fn(self, pose):
-        # TODO: make sure that pose correspond or transform via rtde
-        xyz, axang = np.split(pose, 2)
-        xyz -= np.array([-0.4922, 0.0381, 0.01]) # achieve 0.03 at the lowest point
-        scale = 1 - 2 * np.pi / np.linalg.norm(axang)
-        axang *= scale
-        return np.concatenate([xyz, axang])
 
     def action_spec(self, scene):
         return specs.DiscreteArray(len(DiscreteActions), dtype=np.int32)
 
     def before_step(self, scene, action, random_state):
-        pos = np.asarray(scene.arm.rtde_receive.getActualTCPPose())
-        action = DiscreteActions.as_array(action)
+        pos = scene.arm.rtde_receive.getActualTCPPose()
+        import pdb; pdb.set_trace()
+        xyz, rotvec = np.split(pos, 2)
+        rmat = Rotation.from_rotvec(rotvec).as_matrix()
+        action = DiscreteActions.sim2real_spoofing(action)
         arm, grasp, rot = np.split(action, [3, 4])
-        arm *= self.CTRL_LIMIT
-        if np.linalg.norm(pos[:3] + arm - self._init_pos) > .2:
+        arm = self.CTRL_LIMIT * rmat @ arm
+        if np.linalg.norm(xyz + arm - self._init_pos) > .2:
             arm = np.zeros_like(arm)
         if grasp:
             self._grasped = grasp
