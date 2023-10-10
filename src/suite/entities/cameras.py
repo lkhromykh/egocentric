@@ -23,9 +23,9 @@ KINECT = CameraSpec(
 # https://www.intelrealsense.com/depth-camera-d455/
 EGOCENTRIC_REALSENSE = CameraSpec(
     name='realsense',
-    pos=(0., .091, 0.),
-    quat=(0., 0., 0.999, .03),
-    fovy=57
+    pos=(-0.003, .091, .02),
+    quat=(0., 0., 0.99876, .03),
+    fovy=60
 )
 
 

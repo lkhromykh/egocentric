@@ -62,9 +62,9 @@ class WorkSpace(NamedTuple):
 
     @classmethod
     def from_halfsizes(cls,
-                       half_sizes: _XY = (.08, .08),
-                       tcp_bbox_height: _XY = (.16, .4),
-                       tcp_init_height: _XY = (.3, .4)
+                       half_sizes: _XY = (.1, .1),
+                       tcp_bbox_height: _XY = (.16, .35),
+                       tcp_init_height: _XY = (.2, .35)
                        ) -> 'WorkSpace':
         x, y = half_sizes
         blow, bhigh = tcp_bbox_height
@@ -218,7 +218,7 @@ class Task(abc.ABC, _Task):
             # builtin=distributions.UniformChoice(('gradient', 'checker', 'flat')),
             mark='random',
             markrgb=uni(0., .1),
-            random=uni(0., .02),
+            random=uni(0., .001),
         )
         self._mjcf_variation.bind_attributes(
             self._arena.groundplane_material,
