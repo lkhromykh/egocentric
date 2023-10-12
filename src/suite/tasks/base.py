@@ -213,9 +213,8 @@ class Task(abc.ABC, _Task):
 
         self._mjcf_variation.bind_attributes(
             self._arena.groundplane_texture,
-            rgb1=eq_noise(.6, 1.),
+            rgb1=uni(.5, 1.),
             rgb2=uni(),
-            # builtin=distributions.UniformChoice(('gradient', 'checker', 'flat')),
             mark='random',
             markrgb=uni(0., .1),
             random=uni(0., .001),
@@ -230,7 +229,7 @@ class Task(abc.ABC, _Task):
         self._mjcf_variation.bind_attributes(
             self._camera,
             pos=noises.Additive(uni(-0.005, 0.005)),
-            quat=noises.Additive(uni(-0.01, 0.01)),
+            quat=noises.Additive(uni(-0.005, 0.005)),
             fovy=noises.Additive(uni(-3, 3))
         )
 
