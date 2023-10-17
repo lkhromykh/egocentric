@@ -19,7 +19,7 @@ from src.suite import entities
 ActionMode = Literal['discrete', 'continuous']
 
 
-class DiscreteActions(IntEnum):
+class DiscreteAction(IntEnum):
     LEFT = 0
     RIGHT = 1
     FORWARD = 2
@@ -34,7 +34,7 @@ class DiscreteActions(IntEnum):
     @staticmethod
     def as_array(action: int, dtype=np.float32) -> common.Array:
         idx, val = np.divmod(action, 2)
-        ar = np.zeros(len(DiscreteActions) // 2, dtype=dtype)
+        ar = np.zeros(len(DiscreteAction) // 2, dtype=dtype)
         ar[idx] = -1 if val else 1
         return ar
 
@@ -63,8 +63,8 @@ class WorkSpace(NamedTuple):
     @classmethod
     def from_halfsizes(cls,
                        half_sizes: _XY = (.1, .1),
-                       tcp_bbox_height: _XY = (.16, .35),
-                       tcp_init_height: _XY = (.2, .35)
+                       tcp_bbox_height: _XY = (.16, .4),
+                       tcp_init_height: _XY = (.2, .4)
                        ) -> 'WorkSpace':
         x, y = half_sizes
         blow, bhigh = tcp_bbox_height
@@ -132,7 +132,7 @@ class Task(abc.ABC, _Task):
     def before_step(self, physics, action, random_state):
         try:  # TODO: find out why BAD_CTRL occurs.
             if self.action_mod == 'discrete':
-                action = DiscreteActions.as_array(action)
+                action = DiscreteAction.as_array(action)
             else:
                 action = np.clip(action, -1, 1)
             pos, grip, rot = map(np.squeeze, np.split(action, [3, 4]))
@@ -156,7 +156,7 @@ class Task(abc.ABC, _Task):
             raise PhysicsError from exc
 
     def action_spec(self, physics):
-        num_values = len(DiscreteActions)
+        num_values = len(DiscreteAction)
         match self.action_mod:
             case 'discrete':
                 return specs.DiscreteArray(num_values, dtype=np.int32)

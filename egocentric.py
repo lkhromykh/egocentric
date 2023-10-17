@@ -34,7 +34,7 @@ def task_sampler():
         yield random.choice(variations)
 
 
-class DiscreteActions(IntEnum):
+class DiscreteAction(IntEnum):
     LEFT = 0
     RIGHT = 1
     FORWARD = 2
@@ -49,27 +49,21 @@ class DiscreteActions(IntEnum):
     @staticmethod
     def as_array(action: int, dtype=np.float32) -> np.ndarray:
         idx, val = np.divmod(action, 2)
-        ar = np.zeros(len(DiscreteActions) // 2, dtype=dtype)
+        ar = np.zeros(len(DiscreteAction) // 2, dtype=dtype)
         ar[idx] = -1 if val else 1
         return ar
 
     @staticmethod
     def sim2real_spoofing(action: int):
-        """Sim2Real defects. Identity mapping in case of exact """
+        """Sim2Real defects. Identity mapping in case of exact match."""
         mapping = {
-            0: 0,
-            1: 1,
-            2: 2,
-            3: 3,
-            4: 4,
-            5: 5,
-            6: 6,
-            7: 7,
-            8: 8,
-            9: 9,
+            0: 1,
+            1: 0,
+            2: 3,
+            3: 2,
         }
-        action = mapping.get(action)
-        return DiscreteActions.as_array(action)
+        action = mapping.get(action, action)
+        return DiscreteAction.as_array(action)
 
 
 class PickAndLift(Task):
@@ -114,7 +108,7 @@ class PickAndLift(Task):
     def get_observation(self, scene):
         obs = scene.get_observation()
         img = self._img_fn(obs['realsense/image'])
-        height = obs['arm/ActualTCPPose'][2:]
+        height = obs['arm/ActualTCPPose'][2:3]
         return {
             self.IMG_KEY: img,
             self.HEIGHT_KEY: height,
@@ -151,14 +145,13 @@ class PickAndLift(Task):
         return np.asarray(img)
 
     def action_spec(self, scene):
-        return specs.DiscreteArray(len(DiscreteActions), dtype=np.int32)
+        return specs.DiscreteArray(len(DiscreteAction), dtype=np.int32)
 
     def before_step(self, scene, action, random_state):
         pos = scene.arm.rtde_receive.getActualTCPPose()
-        import pdb; pdb.set_trace()
-        xyz, rotvec = np.split(pos, 2)
+        xyz, rotvec = np.split(np.asarray(pos), 2)
         rmat = Rotation.from_rotvec(rotvec).as_matrix()
-        action = DiscreteActions.sim2real_spoofing(action)
+        action = DiscreteAction.sim2real_spoofing(action)
         arm, grasp, rot = np.split(action, [3, 4])
         arm = self.CTRL_LIMIT * rmat @ arm
         if np.linalg.norm(xyz + arm - self._init_pos) > .2:

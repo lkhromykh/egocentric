@@ -83,7 +83,7 @@ class PickAndLift(base.Task):
             item = random_state.choice(_ITEMS)
             self._prop.detach()
             self._prop = entities.HouseholdItem(item,
-                                                scale='.5 .5 .5',
+                                                scale='.4 .4 .4',
                                                 rgb=None)
             self._prop.observables.enable_all()
             self._arena.add_free_entity(self._prop)
