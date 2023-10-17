@@ -1,5 +1,6 @@
 import os
 
+import numpy as np
 from dm_control.composer import initializers
 from dm_control.composer.observation import observable
 from dm_control.composer.environment import EpisodeInitializationError
@@ -54,13 +55,24 @@ CYLINDERS = [
 ]
 
 
+class Box(entities.BoxWithVertexSites):
+
+    def _build_observables(self):
+        return entities.StaticPrimitiveObservables(self)
+
+
 class PickAndLift(base.Task):
 
     MARGIN: float = .15
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._prop = entities.HouseholdItem('Ultra_JarroDophilus')
+        # self._prop = entities.HouseholdItem('Ultra_JarroDophilus')
+        self._prop = Box(
+            half_lengths=common.BOX_SIZE,
+            mass=common.BOX_MASS,
+            name='model'
+        )
         self._prop_height = None
         self._arena.add_free_entity(self._prop)
         lower = self.workspace.tcp_box.lower.copy()
@@ -80,11 +92,18 @@ class PickAndLift(base.Task):
     def initialize_episode_mjcf(self, random_state):
         try:
             super().initialize_episode_mjcf(random_state)
-            item = random_state.choice(_ITEMS)
+            # item = random_state.choice(_ITEMS)
             self._prop.detach()
-            self._prop = entities.HouseholdItem(item,
-                                                scale='.4 .4 .4',
-                                                rgb=None)
+            # self._prop = entities.HouseholdItem(item,
+            #                                     scale='.4 .4 .4',
+            #                                     rgb=None)
+            self._prop = Box(
+                half_lengths=tuple(random_state.uniform(.015, .04, 3)),
+                mass=random_state.uniform(0.1, 1.),
+                name='model'
+            )
+            rgba = np.concatenate([random_state.uniform(0, 1., 3), [1]])
+            self._prop.geom.rgba = rgba
             self._prop.observables.enable_all()
             self._arena.add_free_entity(self._prop)
         except Exception as exc:
@@ -118,6 +137,7 @@ class PickAndLift(base.Task):
         )
 
     def _prop_com_height(self, physics):
+        return physics.bind(self._prop.geom).xpos[2]
         prop = physics.bind(self._prop.body)
         return prop.xipos[2]
 
@@ -126,7 +146,8 @@ class PickAndLift(base.Task):
 
         def distance(physics):
             tcp_pos = physics.bind(self._gripper.tool_center_point).xpos
-            obj_pos = physics.bind(self._prop.body).xipos
+            obj_pos = physics.bind(self._prop.geom).xpos
+            # obj_pos = physics.bind(self._prop.body).xipos
             return obj_pos - tcp_pos
         self._task_observables[f'{self._prop.mjcf_model.model}/distance'] =\
             observable.Generic(distance)
