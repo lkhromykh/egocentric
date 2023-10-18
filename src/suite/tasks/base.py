@@ -64,7 +64,7 @@ class WorkSpace(NamedTuple):
     def from_halfsizes(cls,
                        half_sizes: _XY = (.1, .1),
                        tcp_bbox_height: _XY = (.16, .4),
-                       tcp_init_height: _XY = (.2, .4)
+                       tcp_init_height: _XY = (.25, .4)
                        ) -> 'WorkSpace':
         x, y = half_sizes
         blow, bhigh = tcp_bbox_height
@@ -87,7 +87,7 @@ class Task(abc.ABC, _Task):
                  control_timestep: float = common.CONTROL_TIMESTEP,
                  action_mode: ActionMode = 'discrete',
                  workspace: WorkSpace = _DEFAULT_WORKSPACE,
-                 img_size: tuple[int, int] = (64, 64)
+                 img_size: tuple[int, int] = (96, 96)
                  ) -> None:
         self._control_timestep = control_timestep
         self.action_mod = action_mode.lower()
@@ -213,7 +213,7 @@ class Task(abc.ABC, _Task):
 
         self._mjcf_variation.bind_attributes(
             self._arena.groundplane_texture,
-            rgb1=uni(.5, 1.),
+            rgb1=uni(.4, 1.),
             rgb2=uni(),
             mark='random',
             markrgb=uni(0., .1),
@@ -239,7 +239,7 @@ class Task(abc.ABC, _Task):
         gripper = self._gripper.mjcf_model.model
 
         def noisy_cam(img, random_state):
-            noise = random_state.randint(-10, 10, img.shape)
+            noise = random_state.randint(-5, 5, img.shape)
             return np.clip(img + noise, 0, 255).astype(img.dtype)
         self._task_observables[f'{cam}/image'].corruptor = noisy_cam
 

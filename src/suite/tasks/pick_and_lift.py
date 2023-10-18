@@ -1,6 +1,5 @@
 import os
 
-import numpy as np
 from dm_control.composer import initializers
 from dm_control.composer.observation import observable
 from dm_control.composer.environment import EpisodeInitializationError
@@ -16,49 +15,6 @@ with open(os.path.join(os.path.dirname(__file__), 'banlist')) as f:
     _banlist = f.read().splitlines()
 _ITEMS = os.listdir(entities.HouseholdItem.DATA_DIR)
 _ITEMS = list(set(_ITEMS) - set(_banlist))
-BOXES = [
-    'Nestle_Skinny_Cow_Dreamy_Clusters_Candy_Dark_Chocolate_6_pack_1_oz_pouches',
-    'Office_Depot_Canon_PG21XL_Remanufactured_Ink_Cartridge_Black',
-    'U_By_Kotex_Sleek_Regular_Unscented_Tampons_36_Ct_Box',
-    'Epson_Ink_Cartridge_126_Yellow',
-    'Office_Depot_HP_61Tricolor_Ink_Cartridge',
-    'Sonicare_2_Series_Toothbrush_Plaque_Control',
-    'Tune_Belt_Sport_Armband_For_Samsung_Galaxy_S3',
-    'Marc_Anthony_True_Professional_Oil_of_Morocco_Argan_Oil_Treatment',
-    'Hasbro_Life_Board_Game',
-    'Winning_Moves_1180_Aggravation_Board_Game',
-    'Crayola_Washable_Sidewalk_Chalk_16_pack',
-    'Dell_Ink_Cartridge_Yellow_31',
-    'Perricone_MD_Chia_Serum',
-    'Asus_Z97IPLUS_Motherboard_Mini_ITX_LGA1150_Socket'
-]
-CYLINDERS = [
-    'Quercetin_500',
-    'Marc_Anthony_True_Professional_Strictly_Curls_Curl_Defining_Lotion',
-    'Nestle_Nesquik_Chocolate_Powder_Flavored_Milk_Additive_109_Oz_Canister',
-    '5_HTP',
-    'Big_Dot_Aqua_Pencil_Case',
-    'Weston_No_33_Signature_Sausage_Tonic_12_fl_oz',
-    'Theanine',
-    'Mastic_Gum',
-    'Whey_Protein_Vanilla',
-    'Cole_Hardware_Antislip_Surfacing_Material_White',
-    'Big_Dot_Pink_Pencil_Case',
-    'Lactoferrin',
-    'Room_Essentials_Mug_White_Yellow',
-    'QAbsorb_CoQ10',
-    'JarroDophilusFOS_Value_Size',
-    'Aroma_Stainless_Steel_Milk_Frother_2_Cup',
-    'Threshold_Ramekin_White_Porcelain',
-    'Prostate_Optimizer',
-    'Ecoforms_Plant_Container_GP16AMOCHA'
-]
-
-
-class Box(entities.BoxWithVertexSites):
-
-    def _build_observables(self):
-        return entities.StaticPrimitiveObservables(self)
 
 
 class PickAndLift(base.Task):
@@ -67,12 +23,7 @@ class PickAndLift(base.Task):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # self._prop = entities.HouseholdItem('Ultra_JarroDophilus')
-        self._prop = Box(
-            half_lengths=common.BOX_SIZE,
-            mass=common.BOX_MASS,
-            name='model'
-        )
+        self._prop = entities.HouseholdItem('Ultra_JarroDophilus')
         self._prop_height = None
         self._arena.add_free_entity(self._prop)
         lower = self.workspace.tcp_box.lower.copy()
@@ -92,18 +43,12 @@ class PickAndLift(base.Task):
     def initialize_episode_mjcf(self, random_state):
         try:
             super().initialize_episode_mjcf(random_state)
-            # item = random_state.choice(_ITEMS)
+            item = random_state.choice(_ITEMS)
             self._prop.detach()
-            # self._prop = entities.HouseholdItem(item,
-            #                                     scale='.4 .4 .4',
-            #                                     rgb=None)
-            self._prop = Box(
-                half_lengths=tuple(random_state.uniform(.015, .04, 3)),
-                mass=random_state.uniform(0.1, 1.),
-                name='model'
-            )
-            rgba = np.concatenate([random_state.uniform(0, 1., 3), [1]])
-            self._prop.geom.rgba = rgba
+            rgb = random_state.uniform(0, 1, (3,))
+            self._prop = entities.HouseholdItem(item,
+                                                scale='.4 .4 .4',
+                                                rgb=rgb)
             self._prop.observables.enable_all()
             self._arena.add_free_entity(self._prop)
         except Exception as exc:
@@ -137,7 +82,6 @@ class PickAndLift(base.Task):
         )
 
     def _prop_com_height(self, physics):
-        return physics.bind(self._prop.geom).xpos[2]
         prop = physics.bind(self._prop.body)
         return prop.xipos[2]
 
@@ -146,8 +90,7 @@ class PickAndLift(base.Task):
 
         def distance(physics):
             tcp_pos = physics.bind(self._gripper.tool_center_point).xpos
-            obj_pos = physics.bind(self._prop.geom).xpos
-            # obj_pos = physics.bind(self._prop.body).xipos
+            obj_pos = physics.bind(self._prop.body).xipos
             return obj_pos - tcp_pos
         self._task_observables[f'{self._prop.mjcf_model.model}/distance'] =\
             observable.Generic(distance)
