@@ -14,20 +14,20 @@ class Config(_Config):
     num_actions: int = 20
 
     # Architecture
-    mlp_layers: Layers = 512,
-    cnn_filters: Layers = (32, 64, 128, 256)
+    mlp_layers: Layers = 256,
+    cnn_filters: Layers = (16, 32, 64, 128)
     cnn_kernels: Layers = (3, 3, 3, 3)
     cnn_strides: Layers = (2, 2, 2, 2)
-    actor_keys: str = r'image|tcp_height|object_detected'
-    actor_layers: Layers = 64, 512, 512
+    actor_keys: str = r'image|object_detected'
+    actor_layers: Layers = 64, 256, 256
     critic_keys: str = r'robotiq_2f85|model'
-    critic_layers: Layers = 512, 512, 512
+    critic_layers: Layers = 256, 256, 256
     ensemble_size: int = 2
 
     # Train
     jit: bool = True
-    buffer_capacity: int = 10 ** 5
-    batch_size: int = 256
+    buffer_capacity: int = 10 ** 4
+    batch_size: int = 64
     sequence_len: int = 4
     utd: float = .1
     learning_rate: float = 3e-4
@@ -41,6 +41,6 @@ class Config(_Config):
     img_size: tuple[int, int] = (96, 96)
     task: str = 'src'
     action_space: str = 'discrete'
-    num_envs: int = 16
+    num_envs: int = 2
     seed: int = 2
-    logdir: str = 'logdir/dr_image96_cnn_coloreditems'
+    logdir: str = 'logdir/nodr_image96_cnn_coloreditems_local_small'

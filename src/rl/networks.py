@@ -105,7 +105,7 @@ class Encoder(hk.Module):
                     case _: mlp_feat.append(jnp.atleast_1d(feat))
         if mlp_feat:
             mlp_feat = concat(mlp_feat)
-            mlp = MLP(self.mlp_layers)
+            mlp = MLP(self.mlp_layers, jax.nn.tanh)
             emb.append(mlp(mlp_feat))
         if cnn_feat:
             cnn_feat = concat(cnn_feat)
@@ -159,9 +159,8 @@ class Critic(hk.Module):
                  state: Array,
                  action: Array,
                  ) -> Array:
-        state = MLP(self.layers[:1], jax.nn.tanh)(state)
         x = jnp.concatenate([state, action.astype(state.dtype)], -1)
-        x = MLP(self.layers[1:])(x)
+        x = MLP(self.layers)(x)
         return hk.Linear(1)(x)
 
 

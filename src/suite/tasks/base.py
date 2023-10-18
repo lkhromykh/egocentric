@@ -230,7 +230,7 @@ class Task(abc.ABC, _Task):
             self._camera,
             pos=noises.Additive(uni(-0.005, 0.005)),
             quat=noises.Additive(uni(-0.01, 0.01)),
-            fovy=noises.Additive(uni(-5, 5))
+            fovy=noises.Additive(uni(-3, 3))
         )
 
     def _build_observables(self):
