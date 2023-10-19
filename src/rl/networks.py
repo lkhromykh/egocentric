@@ -52,27 +52,57 @@ class MLP(hk.Module):
         return x
 
 
-class CNN(hk.Module):
+class DenseNetBlock(hk.Module):
 
     def __init__(self,
-                 filters: types.Layers,
-                 kernels: types.Layers,
-                 strides: types.Layers,
+                 num_layers: int,
+                 growth_rate: int,
                  name: str | None = None
                  ) -> None:
         super().__init__(name=name)
-        self.filters = filters
-        self.kernels = kernels
-        self.strides = strides
+        self.num_layers = num_layers
+        self.growth_rate = growth_rate
+
+    def __call__(self, x: Array) -> Array:
+        for _ in range(self.num_layers):
+            shortcut = x
+            x = layer_norm(x)
+            x = act(x)
+            x = hk.Conv2D(self.growth_rate, (3, 3), with_bias=False)(x)
+            x = jnp.concatenate([shortcut, x], -1)
+        return x
+
+
+class DenseNetBottleneckBlock(hk.Module):
+
+    def __call__(self, x: Array) -> Array:
+        x = layer_norm(x)
+        x = act(x)
+        x = hk.Conv2D(x.shape[-1], (1, 1), with_bias=False)(x)
+        return hk.avg_pool(x, (2, 2, 1), (2, 2, 1), padding='VALID')
+
+
+class DenseNet(hk.Module):
+
+    def __init__(self,
+                 layers: types.Layers,
+                 growth_rate: int,
+                 name: str | None = None
+                 ) -> None:
+        super().__init__(name=name)
+        self.layers = layers
+        self.growth_rate = growth_rate
 
     def __call__(self, x: Array) -> Array:
         chex.assert_type(x, int)
         prefix = x.shape[:-3]
-        x = jnp.reshape(x / 255. - 0.5, (-1,) + x.shape[-3:])
-        for f, k, s in zip(self.filters, self.kernels, self.strides):
-            x = hk.Conv2D(f, (k, k), s, padding='VALID', with_bias=False)(x)
-            x = layer_norm(x)
-            x = act(x)
+        x = jnp.reshape(x / 128. - 1, (-1,) + x.shape[-3:])
+        x = hk.Conv2D(2 * self.growth_rate, (3, 3), with_bias=False)(x)
+        for layer in self.layers:
+            x = DenseNetBlock(layer, self.growth_rate)(x)
+            x = DenseNetBottleneckBlock()(x)
+        x = layer_norm(x)
+        x = act(x)
         return jnp.reshape(x, prefix + (-1,))
 
 
@@ -81,17 +111,15 @@ class Encoder(hk.Module):
     def __init__(self,
                  obs_keys: str,
                  mlp_layers: types.Layers,
-                 cnn_filters: types.Layers,
-                 cnn_kernels: types.Layers,
-                 cnn_strides: types.Layers,
+                 densenet_layers: types.Layers,
+                 densenet_growth_rate: int,
                  name: str | None = None
                  ) -> None:
         super().__init__(name=name)
         self.obs_keys = obs_keys
         self.mlp_layers = mlp_layers
-        self.cnn_filters = cnn_filters
-        self.cnn_kernels = cnn_kernels
-        self.cnn_strides = cnn_strides
+        self.densenet_layers = densenet_layers
+        self.densenet_growth_rate = densenet_growth_rate
 
     def __call__(self, obs: types.Observation) -> Array:
         cnn_feat, mlp_feat, emb = [], [], []
@@ -105,13 +133,12 @@ class Encoder(hk.Module):
                     case _: mlp_feat.append(jnp.atleast_1d(feat))
         if mlp_feat:
             mlp_feat = concat(mlp_feat)
-            mlp = MLP(self.mlp_layers, jax.nn.tanh)
+            mlp = MLP(self.mlp_layers)
             emb.append(mlp(mlp_feat))
         if cnn_feat:
             cnn_feat = concat(cnn_feat)
-            cnn = CNN(filters=self.cnn_filters,
-                      kernels=self.cnn_kernels,
-                      strides=self.cnn_strides)
+            cnn = DenseNet(layers=self.densenet_layers,
+                           growth_rate=self.densenet_growth_rate)
             emb.append(cnn(cnn_feat))
         return concat(emb)
 
@@ -209,9 +236,8 @@ class Networks(NamedTuple):
                 return Encoder(
                     keys,
                     cfg.mlp_layers,
-                    cfg.cnn_filters,
-                    cfg.cnn_kernels,
-                    cfg.cnn_strides,
+                    cfg.densenet_layers,
+                    cfg.densenet_growth_rate,
                     name=name
                 )
 
