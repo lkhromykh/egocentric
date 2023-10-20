@@ -53,7 +53,7 @@ class Builder:
                         action_mode=c.action_space,
                         img_size=self.cfg.img_size,
                         control_timestep=.05,
-                        time_limit=2.5,
+                        time_limit=3.,
                     ))
             case 'ur', _:
                 from ur_env.remote import RemoteEnvClient

@@ -205,7 +205,7 @@ class Task(abc.ABC, _Task):
         for light in self.root_entity.mjcf_model.worldbody.find_all('light'):
             self._mjcf_variation.bind_attributes(
                 light,
-                pos=noises.Additive(uni(-1., 1.)),
+                pos=noises.Additive(uni(-.6, .6)),
                 diffuse=eq_noise(.05, .7),
                 specular=eq_noise(.1, .3),
                 ambient=eq_noise(.1, .5)
@@ -213,7 +213,7 @@ class Task(abc.ABC, _Task):
 
         self._mjcf_variation.bind_attributes(
             self._arena.groundplane_texture,
-            rgb1=uni(.4, 1.),
+            rgb1=eq_noise(.4, 1.),
             rgb2=uni(),
             mark='random',
             markrgb=uni(0., .1),

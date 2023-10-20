@@ -102,7 +102,7 @@ class PickAndLift(base.Task):
 
         for obs in self._task_observables.values():
             obs.enabled = True
-        self._task_observables['realsense/image'].enabled = False
+        self._task_observables['realsense/rgbd'].enabled = False
         self._gripper.observables.enable_all()
         self._prop.observables.enable_all()
 
