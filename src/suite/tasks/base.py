@@ -213,7 +213,7 @@ class Task(abc.ABC, _Task):
 
         self._mjcf_variation.bind_attributes(
             self._arena.groundplane_texture,
-            rgb1=eq_noise(.4, 1.),
+            rgb1=uni(.4, 1.),
             rgb2=uni(),
             mark='random',
             markrgb=uni(0., .1),

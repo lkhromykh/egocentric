@@ -19,7 +19,7 @@ _ITEMS = list(set(_ITEMS) - set(_banlist))
 
 class PickAndLift(base.Task):
 
-    MARGIN: float = .15
+    MARGIN: float = .2
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -45,9 +45,11 @@ class PickAndLift(base.Task):
             super().initialize_episode_mjcf(random_state)
             item = random_state.choice(_ITEMS)
             self._prop.detach()
+            scale = .3 * random_state.random() + .3
+            scale = 3 * (scale,)
             rgb = random_state.uniform(0, 1, (3,))
             self._prop = entities.HouseholdItem(item,
-                                                scale='.4 .4 .4',
+                                                scale=scale,
                                                 rgb=rgb)
             self._prop.observables.enable_all()
             self._arena.add_free_entity(self._prop)
