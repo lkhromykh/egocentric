@@ -243,7 +243,7 @@ class Task(abc.ABC, _Task):
             return np.clip(img + noise, 0, 255).astype(img.dtype)
         self._task_observables[f'{cam}/image'].corruptor = noisy_cam
 
-        neareset, farthest = 0.01, 0.4
+        nearest, farthest = 0.06, 0.4
         h, w = self.img_size
         cam_id = f'{gripper}/{cam}'
 
@@ -257,7 +257,7 @@ class Task(abc.ABC, _Task):
         def rgbd(physics):
             img = render(physics, False)
             depth = render(physics, True)
-            depth = (depth - neareset) / (farthest - neareset)
+            depth = (depth - nearest) / (farthest - nearest)
             depth = np.clip(depth, 0, 1)
             depth = np.uint8(255 * depth)
             return np.concatenate([img, depth[..., np.newaxis]], -1)

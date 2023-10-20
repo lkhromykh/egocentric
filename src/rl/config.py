@@ -17,7 +17,7 @@ class Config(_Config):
     mlp_layers: Layers = 512,
     densenet_layers: Layers = 2, 2, 2
     densenet_growth_rate: int = 16
-    actor_keys: str = r'image|length|object_detected'
+    actor_keys: str = r'rgbd|length|object_detected'
     actor_layers: Layers = 512, 512, 512
     critic_keys: str = r'robotiq_2f85|model'
     critic_layers: Layers = 512, 512, 512
@@ -42,4 +42,4 @@ class Config(_Config):
     action_space: str = 'discrete'
     num_envs: int = 16
     seed: int = 2
-    logdir: str = 'logdir/dr_image64_densenet_coloreditems1'
+    logdir: str = 'logdir/dr_image64_densenet_coloreditems_rgbd'

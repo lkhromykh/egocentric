@@ -133,7 +133,7 @@ class Encoder(hk.Module):
                     case _: mlp_feat.append(jnp.atleast_1d(feat))
         if mlp_feat:
             mlp_feat = concat(mlp_feat)
-            mlp = MLP(self.mlp_layers)
+            mlp = MLP(self.mlp_layers, jax.nn.sigmoid)
             emb.append(mlp(mlp_feat))
         if cnn_feat:
             cnn_feat = concat(cnn_feat)
