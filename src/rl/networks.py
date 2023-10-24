@@ -37,18 +37,19 @@ class MLP(hk.Module):
 
     def __init__(self,
                  layers: types.Layers,
-                 activation: Callable = act,
+                 use_tanh_first: bool = False,
                  name: str | None = None,
                  ) -> None:
         super().__init__(name)
         self.layers = layers
-        self.activation = activation
+        self.use_tanh_first = use_tanh_first
 
     def __call__(self, x: Array) -> Array:
-        for layer in self.layers:
+        for i, layer in enumerate(self.layers):
             x = hk.Linear(layer, with_bias=False)(x)
             x = layer_norm(x)
-            x = self.activation(x)
+            act_ = jax.nn.tanh if i == 0 and self.use_tanh_first else act
+            x = act_(x)
         return x
 
 
@@ -133,7 +134,7 @@ class Encoder(hk.Module):
                     case _: mlp_feat.append(jnp.atleast_1d(feat))
         if mlp_feat:
             mlp_feat = concat(mlp_feat)
-            mlp = MLP(self.mlp_layers, jax.nn.sigmoid)
+            mlp = MLP(self.mlp_layers)
             emb.append(mlp(mlp_feat))
         if cnn_feat:
             cnn_feat = concat(cnn_feat)
@@ -155,7 +156,7 @@ class Actor(hk.Module):
         self.layers = layers
 
     def __call__(self, state: Array) -> tfd.Distribution:
-        state = MLP(self.layers)(state)
+        state = MLP(self.layers, use_tanh_first=True)(state)
         w_init = hk.initializers.VarianceScaling(1e-3)
         match sp := self.action_spec:
             case specs.DiscreteArray():
@@ -187,7 +188,7 @@ class Critic(hk.Module):
                  action: Array,
                  ) -> Array:
         x = jnp.concatenate([state, action.astype(state.dtype)], -1)
-        x = MLP(self.layers)(x)
+        x = MLP(self.layers, use_tanh_first=True)(x)
         return hk.Linear(1)(x)
 
 
