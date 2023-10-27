@@ -42,4 +42,4 @@ class Config(_Config):
     action_space: str = 'discrete'
     num_envs: int = 16
     seed: int = 2
-    logdir: str = 'logdir/dr_image64_densenet_coloreditems3'
+    logdir: str = 'logdir/dr_image64_densenet_coloreditems4_slower'
