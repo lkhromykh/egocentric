@@ -67,7 +67,7 @@ def vpi(cfg: Config, nets: Networks) -> types.StepFn:
                 v_t = target_q_dash_t.mean(0)
 
         in_axes = 5 * (1,) + (None,)
-        target_fn = jax.vmap(ops.pql, in_axes,
+        target_fn = jax.vmap(ops.retrace, in_axes,
                              out_axes=1, axis_name='batch')
         in_axes = 2 * (-1,) + 4 * (None,)
         target_fn = jax.vmap(target_fn, in_axes,

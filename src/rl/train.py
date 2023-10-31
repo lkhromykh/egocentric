@@ -60,7 +60,7 @@ def main(cfg: Config):
             reward, success = eval_loop(env, lambda obs: policy(obs, False))
             metrics.update(eval_mean=reward.mean(),
                            eval_std=reward.std(),
-                           eval_succes=success.mean(),  # TODO: fix typo when finish test
+                           eval_success=success.mean()
                            )
             ts = env.reset()
             with open(builder.exp_path(Builder.STATE), 'wb') as f:

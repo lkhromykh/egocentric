@@ -3,10 +3,10 @@ cloudpickle
 dm_control
 dm-haiku
 -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
-jax[cuda12_local]
+jax[cuda12_local]==0.4.16
 numpy
 optax
 rltools[all] @ git+https://github.com/lkhromykh/rltools.git@dev
 tensorflow==2.13.*
-tensorflow_probability[jax]
+tensorflow_probability[jax]==0.21.0
 git+https://github.com/RQC-Robotics/ur5-env.git@dev

@@ -9,7 +9,7 @@ Layers = tuple[int, ...]
 class Config(_Config):
 
     gamma: float = .97
-    lambda_: float = .7
+    lambda_: float = 1.
     entropy_coef: float = 1e-3
     num_actions: int = 20
 
@@ -34,7 +34,7 @@ class Config(_Config):
     weight_decay: float = 1e-5
     max_grad: float = 10.
     eval_every: int = 40_000
-    save_replay_every: int = 2 * 10 ** 5
+    save_replay_every: int = 3 * 10 ** 5
     train_after: int = 10_000
 
     img_size: tuple[int, int] = (64, 64)
@@ -42,4 +42,4 @@ class Config(_Config):
     action_space: str = 'discrete'
     num_envs: int = 16
     seed: int = 2
-    logdir: str = 'logdir/dr_image64_densenet_coloreditems4_slower'
+    logdir: str = 'logdir/dr_image64_densenet_coloreditems_slower'

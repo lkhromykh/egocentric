@@ -45,11 +45,9 @@ class PickAndLift(base.Task):
             super().initialize_episode_mjcf(random_state)
             item = random_state.choice(_ITEMS)
             self._prop.detach()
-            scale = .3 * random_state.random() + .3
-            scale = 3 * (scale,)
             rgb = random_state.uniform(0, 1, (3,))
             self._prop = entities.HouseholdItem(item,
-                                                scale=scale,
+                                                scale='.4 .4 .4',
                                                 rgb=rgb)
             self._prop.observables.enable_all()
             self._arena.add_free_entity(self._prop)
