@@ -37,6 +37,10 @@ class Robotiq2f85(composer.Entity):
         """[0., 1.] -> uint8"""
         ctrl = int(255 * close_factor)
         physics.set_control(ctrl)
+        acc = physics.bind(self._actuators)
+        physics.step()
+        while abs(acc.velocity[0]) > 5e-3:
+            physics.step()
 
     @property
     def tool_center_point(self):
