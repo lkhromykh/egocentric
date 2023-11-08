@@ -130,30 +130,31 @@ class Task(abc.ABC, _Task):
         self._gripper.set_pose(physics, pos, quat)
 
     def before_step(self, physics, action, random_state):
-        try:  # TODO: find out why BAD_CTRL occurs.
-            if self.action_mod == 'discrete':
-                action = DiscreteAction.as_array(action)
-            else:
-                action = np.clip(action, -1, 1)
-            pos, grip, rot = map(np.squeeze, np.split(action, [3, 4]))
-            rmat = physics.bind(self._gripper.tool_center_point).xmat
-            rmat = rmat.reshape((3, 3))
-            pos = common.CTRL_LIMIT * rmat @ pos
-            mocap_pos, mocap_quat = self._get_mocap(physics)
-            if rot.size and rot:
-                rot = common.ROT_LIMIT * np.array([0, 0, rot])
-                rot = transformations.euler_to_quat(rot)
-                quat = transformations.quat_mul(mocap_quat, rot)
-            else:
-                quat = None
-            self._set_mocap(physics,
-                            pos=mocap_pos + pos,
-                            quat=quat
-                            )
-            if grip:
-                self._gripper.set_grasp(physics, float(grip > 0.))
-        except Exception as exc:
-            raise PhysicsError from exc
+        if self.action_mod == 'discrete':
+            action = DiscreteAction.as_array(action)
+        else:
+            action = np.clip(action, -1, 1)
+        pos, grip, rot = map(np.squeeze, np.split(action, [3, 4]))
+        rmat = physics.bind(self._gripper.tool_center_point).xmat
+        rmat = rmat.reshape((3, 3))
+        pos = common.CTRL_LIMIT * rmat @ pos
+        mocap_pos, mocap_quat = self._get_mocap(physics)
+        if rot.size and rot:
+            rot = common.ROT_LIMIT * np.array([0, 0, rot])
+            rot = transformations.euler_to_quat(rot)
+            quat = transformations.quat_mul(mocap_quat, rot)
+        else:
+            quat = None
+        self._set_mocap(physics,
+                        pos=mocap_pos + pos,
+                        quat=quat
+                        )
+        if grip:
+            self._gripper.set_grasp(physics, float(grip > 0.))
+
+    def before_substep(self, physics, action, random_state):
+        del action
+        self._gripper.before_substep(physics, random_state)
 
     def action_spec(self, physics):
         num_values = len(DiscreteAction)

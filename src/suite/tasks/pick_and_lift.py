@@ -41,35 +41,30 @@ class PickAndLift(base.Task):
         self._build_observables()
 
     def initialize_episode_mjcf(self, random_state):
-        try:
-            super().initialize_episode_mjcf(random_state)
-            item = random_state.choice(_ITEMS)
-            self._prop.detach()
-            rgb = random_state.uniform(0, 1, (3,))
-            self._prop = entities.HouseholdItem(item,
-                                                scale='.4 .4 .4',
-                                                rgb=rgb)
-            self._prop.observables.enable_all()
-            self._arena.add_free_entity(self._prop)
-        except Exception as exc:
-            raise EpisodeInitializationError from exc
+        super().initialize_episode_mjcf(random_state)
+        item = random_state.choice(_ITEMS)
+        self._prop.detach()
+        rgb = random_state.uniform(0, 1, (3,))
+        self._prop = entities.HouseholdItem(item,
+                                            scale='.4 .4 .4',
+                                            rgb=rgb)
+        self._prop.observables.enable_all()
+        self._arena.add_free_entity(self._prop)
 
     def initialize_episode(self, physics, random_state):
-        try:
-            self._gripper.set_pose(physics, self.workspace.tcp_box.upper)
-            prop_placer = initializers.PropPlacer(
-                props=[self._prop],
-                position=distributions.Uniform(*self.workspace.prop_box),
-                quaternion=workspaces.uniform_z_rotation,
-                ignore_collisions=False,
-                settle_physics=True,
-            )
-            prop_placer(physics, random_state)
-            super().initialize_episode(physics, random_state)
-            physics.forward()
-            self._prop_height = self._prop_com_height(physics)
-        except Exception as exc:
-            raise EpisodeInitializationError from exc
+        self._gripper.set_pose(physics, self.workspace.tcp_box.upper)
+        prop_placer = initializers.PropPlacer(
+            props=[self._prop],
+            position=distributions.Uniform(*self.workspace.prop_box),
+            quaternion=workspaces.uniform_z_rotation,
+            ignore_collisions=False,
+            settle_physics=True,
+        )
+        prop_placer(physics, random_state)
+        # Odd placement due to adding new prop and then setting gripper.
+        super().initialize_episode(physics, random_state)
+        physics.forward()
+        self._prop_height = self._prop_com_height(physics)
 
     def get_reward(self, physics):
         diff = self._prop_com_height(physics) - self._prop_height

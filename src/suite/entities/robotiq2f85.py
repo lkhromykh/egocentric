@@ -37,8 +37,9 @@ class Robotiq2f85(composer.Entity):
         """[0., 1.] -> uint8"""
         ctrl = int(255 * close_factor)
         physics.set_control(ctrl)
+
+    def before_substep(self, physics, random_state):
         acc = physics.bind(self._actuators)
-        physics.step()
         while abs(acc.velocity[0]) > 5e-3:
             physics.step()
 
