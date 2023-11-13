@@ -28,13 +28,13 @@ class Config(_Config):
     buffer_capacity: int = 10 ** 5
     batch_size: int = 128
     sequence_len: int = 8
-    utd: float = .1
+    utd: float = .05
     learning_rate: float = 3e-4
     polyak_tau: float = 5e-3
     weight_decay: float = 1e-5
     max_grad: float = 10.
     eval_every: int = 40_000
-    save_replay_every: int = 3 * 10 ** 5
+    save_replay_every: int = 10**8
     train_after: int = 10_000
 
     img_size: tuple[int, int] = (64, 64)
