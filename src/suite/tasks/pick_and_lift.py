@@ -2,7 +2,6 @@ import os
 
 from dm_control.composer import initializers
 from dm_control.composer.observation import observable
-from dm_control.composer.environment import EpisodeInitializationError
 from dm_control.utils import rewards
 from dm_control.composer.variation import distributions
 from dm_control.manipulation.shared import workspaces
@@ -19,7 +18,7 @@ _ITEMS = list(set(_ITEMS) - set(_banlist))
 
 class PickAndLift(base.Task):
 
-    MARGIN: float = .2
+    MARGIN: float = .25
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

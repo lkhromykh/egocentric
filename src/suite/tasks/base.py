@@ -11,7 +11,6 @@ from dm_control.manipulation.shared import workspaces
 from dm_control.composer.observation import observable
 from dm_control.composer.variation import noises, distributions
 from dm_control.utils import transformations
-from dm_control.rl.control import PhysicsError
 
 from src.suite import common
 from src.suite import entities
